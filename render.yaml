@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: pulse-lfg-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: CARD_TTL_SECS
+        value: "300"
+      - key: REAPER_INTERVAL_SECS
+        value: "15"
+      - key: RATE_LIMIT_CARDS_PER_MIN
+        value: "2"
+      - key: RATE_LIMIT_JOINS_PER_MIN
+        value: "5"
+      - key: MAX_CONNECTIONS
+        value: "500"
+      - key: LOG_LEVEL
+        value: "info"

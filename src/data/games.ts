@@ -1,0 +1,157 @@
+import type { GameTag, RankTier } from "../types";
+
+export interface PlatformDef {
+  id: string;
+  label: string;
+  placeholder: string;
+}
+
+export interface GameDef {
+  id: GameTag;
+  label: string;
+  short: string;
+  color: string;
+  icon: string;
+  platforms: PlatformDef[];
+  ranks: RankTier[];
+}
+
+export const GAMES: GameDef[] = [
+  {
+    id: "Valorant",
+    label: "Valorant",
+    short: "VAL",
+    color: "#ff4655",
+    icon: "⬡",
+    platforms: [{ id: "riot", label: "Riot ID", placeholder: "Player#TAG" }],
+    ranks: [
+      { label: "Iron", ordinal: 0 },
+      { label: "Bronze", ordinal: 1 },
+      { label: "Silver", ordinal: 2 },
+      { label: "Gold", ordinal: 3 },
+      { label: "Platinum", ordinal: 4 },
+      { label: "Diamond", ordinal: 5 },
+      { label: "Ascendant", ordinal: 6 },
+      { label: "Immortal", ordinal: 7 },
+      { label: "Radiant", ordinal: 8 },
+    ],
+  },
+  {
+    id: "LeagueOfLegends",
+    label: "League of Legends",
+    short: "LoL",
+    color: "#c89b3c",
+    icon: "⚔",
+    platforms: [{ id: "riot", label: "Riot ID", placeholder: "Player#TAG" }],
+    ranks: [
+      { label: "Iron", ordinal: 0 },
+      { label: "Bronze", ordinal: 1 },
+      { label: "Silver", ordinal: 2 },
+      { label: "Gold", ordinal: 3 },
+      { label: "Platinum", ordinal: 4 },
+      { label: "Emerald", ordinal: 5 },
+      { label: "Diamond", ordinal: 6 },
+      { label: "Master", ordinal: 7 },
+      { label: "Grandmaster", ordinal: 8 },
+      { label: "Challenger", ordinal: 9 },
+    ],
+  },
+  {
+    id: "CS2",
+    label: "CS2",
+    short: "CS2",
+    color: "#e8a249",
+    icon: "◎",
+    platforms: [
+      {
+        id: "steam",
+        label: "Steam Profile URL",
+        placeholder: "https://steamcommunity.com/id/...",
+      },
+    ],
+    ranks: [
+      { label: "Silver I", ordinal: 0 },
+      { label: "Silver IV", ordinal: 1 },
+      { label: "Silver Elite", ordinal: 2 },
+      { label: "Gold Nova I", ordinal: 3 },
+      { label: "Gold Nova III", ordinal: 4 },
+      { label: "MG1", ordinal: 5 },
+      { label: "MG2", ordinal: 6 },
+      { label: "MGE", ordinal: 7 },
+      { label: "DMG", ordinal: 8 },
+      { label: "LE", ordinal: 9 },
+      { label: "LEM", ordinal: 10 },
+      { label: "Supreme", ordinal: 11 },
+      { label: "Global Elite", ordinal: 12 },
+    ],
+  },
+  {
+    id: "Dota2",
+    label: "Dota 2",
+    short: "D2",
+    color: "#c23c2a",
+    icon: "⬟",
+    platforms: [
+      {
+        id: "steam",
+        label: "Steam Profile URL",
+        placeholder: "https://steamcommunity.com/id/...",
+      },
+    ],
+    ranks: [
+      { label: "Herald", ordinal: 0 },
+      { label: "Guardian", ordinal: 1 },
+      { label: "Crusader", ordinal: 2 },
+      { label: "Archon", ordinal: 3 },
+      { label: "Legend", ordinal: 4 },
+      { label: "Ancient", ordinal: 5 },
+      { label: "Divine", ordinal: 6 },
+      { label: "Immortal", ordinal: 7 },
+    ],
+  },
+  {
+    id: "ApexLegends",
+    label: "Apex Legends",
+    short: "APX",
+    color: "#cc2f40",
+    icon: "◈",
+    platforms: [{ id: "ea", label: "EA Username", placeholder: "YourUsername" }],
+    ranks: [
+      { label: "Bronze", ordinal: 0 },
+      { label: "Silver", ordinal: 1 },
+      { label: "Gold", ordinal: 2 },
+      { label: "Platinum", ordinal: 3 },
+      { label: "Diamond", ordinal: 4 },
+      { label: "Master", ordinal: 5 },
+      { label: "Predator", ordinal: 6 },
+    ],
+  },
+  {
+    id: "Overwatch2",
+    label: "Overwatch 2",
+    short: "OW2",
+    color: "#f99e1a",
+    icon: "⊕",
+    platforms: [
+      { id: "battle.net", label: "BattleTag", placeholder: "Player#12345" },
+    ],
+    ranks: [
+      { label: "Bronze", ordinal: 0 },
+      { label: "Silver", ordinal: 1 },
+      { label: "Gold", ordinal: 2 },
+      { label: "Platinum", ordinal: 3 },
+      { label: "Diamond", ordinal: 4 },
+      { label: "Master", ordinal: 5 },
+      { label: "Grandmaster", ordinal: 6 },
+      { label: "Champion", ordinal: 7 },
+    ],
+  },
+];
+
+export function getGame(id: GameTag): GameDef | undefined {
+  return GAMES.find((g) => g.id === id);
+}
+
+export function getGameColor(id: GameTag): string {
+  return getGame(id)?.color ?? "#00ffa3";
+}

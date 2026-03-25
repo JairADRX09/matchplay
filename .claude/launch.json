@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "pulse-server",
+      "runtimeExecutable": "C:\\Users\\jarmo\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+      "runtimeArgs": ["run", "--bin", "pulse-server"],
+      "port": 8080
+    },
+    {
+      "name": "pulse-frontend",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["node_modules/vite/bin/vite.js", "--port", "5173"],
+      "port": 5173
+    }
+  ]
+}
