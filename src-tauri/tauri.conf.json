@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Pulse LFG",
+        "title": "Macu",
         "width": 460,
         "height": 700,
         "minWidth": 460,
@@ -27,7 +27,9 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": [
+      "nsis"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
