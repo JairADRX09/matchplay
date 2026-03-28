@@ -24,5 +24,5 @@ export const T = {
   sans: "'DM Sans', sans-serif",
   radius: 10,
   radiusSm: 6,
-  panelWidth: 390,
+  panelWidth: 296,
 } as const;

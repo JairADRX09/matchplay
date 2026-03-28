@@ -39,6 +39,7 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, state: AppState) {
     let (tx, mut rx) = mpsc::unbounded_channel::<ServerMessage>();
 
     state.hub.register_connection(conn_id.clone(), tx.clone());
+    state.hub.broadcast_stats();
     info!(conn_id = %conn_id, "WebSocket connected");
 
     let (mut ws_sender, mut ws_receiver) = socket.split();
@@ -89,6 +90,7 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, state: AppState) {
     }
     state.hub.unsubscribe(&conn_id);
     state.hub.unregister_connection(&conn_id);
+    state.hub.broadcast_stats();
     info!(conn_id = %conn_id, "WebSocket disconnected");
 }
 
@@ -112,7 +114,7 @@ fn handle_client_message(
     };
 
     match msg {
-        ClientMessage::PublishCard { game, mode, rank, game_ids } => {
+        ClientMessage::PublishCard { game, mode, rank, game_ids, max_slots } => {
             if !publish_limiter.try_consume() {
                 warn!(conn_id = %conn_id, "Rate limited: PublishCard");
                 let _ = tx.send(ServerMessage::Error {
@@ -139,6 +141,8 @@ fn handle_client_message(
                             .duration_since(UNIX_EPOCH)
                             .unwrap_or_default()
                             .as_secs(),
+                        slots: 1,
+                        max_slots: max_slots.clamp(2, 10),
                     };
                     let card_id = card.id.clone();
                     state.store.insert(card.clone(), conn_id.to_string(), game_ids);
@@ -170,18 +174,30 @@ fn handle_client_message(
                     });
                 }
                 Ok(()) => {
-                    if let Some(stored) = state.store.get(&card_id) {
-                        if let Some(host) = state.hub.get_connection(&stored.host_conn_id) {
-                            let _ = host.send(ServerMessage::Handshake {
-                                card_id: card_id.clone(),
-                                joiner_ids: game_ids,
+                    match state.store.add_member(&card_id, conn_id.to_string(), game_ids.clone()) {
+                        None => {
+                            let _ = tx.send(ServerMessage::Error {
+                                code: ErrorCode::CardNotFound,
+                                message: "Lobby is full or not found".to_string(),
                             });
                         }
-                        let _ = tx.send(ServerMessage::HandshakeAccepted {
-                            card_id,
-                            host_ids: stored.host_game_ids,
-                        });
-                        info!(conn_id = %conn_id, "Handshake executed");
+                        Some((updated_card, existing_ids, host_conn_id)) => {
+                            // Send HandshakeAccepted to joiner with all existing member IDs
+                            let _ = tx.send(ServerMessage::HandshakeAccepted {
+                                card_id: card_id.clone(),
+                                host_ids: existing_ids,
+                            });
+                            // Notify host about new joiner
+                            if let Some(host_tx) = state.hub.get_connection(&host_conn_id) {
+                                let _ = host_tx.send(ServerMessage::Handshake {
+                                    card_id: card_id.clone(),
+                                    joiner_ids: game_ids,
+                                });
+                            }
+                            // Broadcast updated slot count to all subscribers
+                            state.hub.broadcast_card_updated(&updated_card);
+                            info!(conn_id = %conn_id, "Joined lobby {}", card_id);
+                        }
                     }
                 }
             }

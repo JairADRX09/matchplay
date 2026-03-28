@@ -1,4 +1,4 @@
-export const CARD_TTL_SECS = 300;
+export const CARD_TTL_SECS = 60;
 
 /** Seconds elapsed since unix timestamp */
 export function elapsedSecs(createdAt: number): number {

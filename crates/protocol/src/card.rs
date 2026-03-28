@@ -22,4 +22,6 @@ pub struct Card {
     pub mode: GameMode,
     pub rank: RankTier,
     pub created_at: u64,
+    pub slots: u8,      // current players (starts at 1 for host)
+    pub max_slots: u8,  // maximum players
 }

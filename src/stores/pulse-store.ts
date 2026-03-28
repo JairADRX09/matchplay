@@ -14,9 +14,10 @@ export type AppView = "setup" | "feed" | "settings";
 
 export interface HandshakeState {
   cardId: CardId;
-  ids: GameID[];
+  ids: GameID[];       // all other players' IDs in the lobby
   kind: "host" | "joiner";
   game: GameTag;
+  createdAt: number;   // unix seconds of the card (for countdown)
 }
 
 interface PendingPublish {
@@ -37,11 +38,12 @@ interface PulseState {
   modeFilter: "All" | GameMode;
   minRankOrdinal: number | null;
 
-  // Handshake modal
+  // Handshake / Lobby modal
   handshake: HandshakeState | null;
 
   // WS connection
   connected: boolean;
+  connectedCount: number;
 
   // Navigation
   view: AppView;
@@ -53,15 +55,18 @@ interface PulseState {
   // Actions
   addCard: (card: Card) => void;
   removeCard: (cardId: CardId) => void;
+  updateCard: (card: Card) => void;
   setConnected: (v: boolean) => void;
+  setConnectedCount: (n: number) => void;
   setHandshake: (hs: HandshakeState) => void;
+  appendHandshakeIds: (ids: GameID[]) => void;
   clearHandshake: () => void;
   setView: (v: AppView) => void;
   toggleGameFilter: (game: GameTag) => void;
   setModeFilter: (mode: "All" | GameMode) => void;
   setMinRank: (ordinal: number | null) => void;
   setUserConfig: (games: GameTag[], gameIds: Record<GameTag, GameID>) => void;
-  publishCard: (game: GameTag, mode: GameMode, rank: RankTier) => void;
+  publishCard: (game: GameTag, mode: GameMode, rank: RankTier, maxSlots?: number) => void;
   joinCard: (cardId: CardId, gameTag: GameTag) => void;
   dismissCard: (cardId: CardId) => void;
   resubscribe: () => void;
@@ -89,6 +94,7 @@ export const usePulseStore = create<PulseState>((set, get) => ({
   minRankOrdinal: null,
   handshake: null,
   connected: false,
+  connectedCount: 0,
   view: "setup",
   userGames: [],
   userGameIds: {},
@@ -97,7 +103,7 @@ export const usePulseStore = create<PulseState>((set, get) => ({
     set((s) => {
       if (s.cards.some((c) => c.id === card.id)) return s;
 
-      let { myCardId, pendingPublish } = s;
+      let { myCardId, pendingPublish, handshake } = s;
 
       // Detect our own card by matching the pending publish
       if (
@@ -108,9 +114,18 @@ export const usePulseStore = create<PulseState>((set, get) => ({
       ) {
         myCardId = card.id;
         pendingPublish = null;
+        // Open lobby room only after server confirms the card
+        const ownGameId = s.userGameIds[card.game];
+        handshake = {
+          cardId: card.id,
+          ids: ownGameId ? [ownGameId] : [],
+          kind: "host",
+          game: card.game,
+          createdAt: card.created_at,
+        };
       }
 
-      return { cards: [card, ...s.cards], myCardId, pendingPublish };
+      return { cards: [card, ...s.cards], myCardId, pendingPublish, handshake };
     });
   },
 
@@ -118,11 +133,32 @@ export const usePulseStore = create<PulseState>((set, get) => ({
     set((s) => ({
       cards: s.cards.filter((c) => c.id !== cardId),
       myCardId: s.myCardId === cardId ? null : s.myCardId,
+      // Close lobby if the card we're in got removed
+      handshake:
+        s.handshake?.cardId === cardId ? null : s.handshake,
+    })),
+
+  updateCard: (card) =>
+    set((s) => ({
+      cards: s.cards.map((c) => (c.id === card.id ? card : c)),
     })),
 
   setConnected: (connected) => set({ connected }),
 
+  setConnectedCount: (connectedCount) => set({ connectedCount }),
+
   setHandshake: (handshake) => set({ handshake }),
+
+  appendHandshakeIds: (ids) =>
+    set((s) => {
+      if (!s.handshake) return s;
+      return {
+        handshake: {
+          ...s.handshake,
+          ids: [...s.handshake.ids, ...ids],
+        },
+      };
+    }),
 
   clearHandshake: () => set({ handshake: null }),
 
@@ -156,15 +192,20 @@ export const usePulseStore = create<PulseState>((set, get) => ({
     wsSend({ type: "Subscribe", filters: buildFilters(games, modeFilter) });
   },
 
-  publishCard: (game, mode, rank) => {
-    const { userGameIds } = get();
-    const gameId = userGameIds[game];
-    if (!gameId) {
-      set({ publishError: "Configure your Game ID in Settings first" });
+  publishCard: (game, mode, rank, maxSlots = 4) => {
+    const { userGameIds, connected } = get();
+    if (!connected) {
+      set({ publishError: "Sin conexión al servidor" });
       return;
     }
+    const gameId = userGameIds[game];
+    if (!gameId) {
+      set({ publishError: "Configura tu Game ID en Ajustes primero" });
+      return;
+    }
+    // pendingPublish is set here; handshake opens only after server confirms via addCard
     set({ pendingPublish: { game, mode, rankOrdinal: rank.ordinal }, publishError: null });
-    wsSend({ type: "PublishCard", game, mode, rank, game_ids: [gameId] });
+    wsSend({ type: "PublishCard", game, mode, rank, game_ids: [gameId], max_slots: maxSlots });
   },
 
   joinCard: (cardId, gameTag) => {
@@ -175,7 +216,7 @@ export const usePulseStore = create<PulseState>((set, get) => ({
   },
 
   dismissCard: (cardId) => {
-    set({ myCardId: null, pendingPublish: null });
+    set({ myCardId: null, pendingPublish: null, handshake: null });
     wsSend({ type: "DismissCard", card_id: cardId });
   },
 

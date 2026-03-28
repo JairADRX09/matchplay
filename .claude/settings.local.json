@@ -41,7 +41,10 @@
       "Bash(powershell -Command \"Stop-Process -Name ''language_server_windows_x64'' -Force -ErrorAction SilentlyContinue\")",
       "Bash(powershell -Command \"Get-Process | Where-Object { $_.Name -like ''*pulse*'' -or $_.Name -like ''*tauri*'' -or $_.Name -like ''*WebView*'' } | Select Name, Id\")",
       "Bash(powershell -Command \"Stop-Process -Name ''''pulse-desktop'''',''''language_server_windows_x64'''' -Force -ErrorAction SilentlyContinue; Start-Sleep 1\")",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(CARGO_INCREMENTAL=0 C:/Users/jarmo/AppData/Local/puccinialin/puccinialin/Cache/cargo/bin/cargo.exe check -p protocol -p server)",
+      "Bash(cargo build:*)",
+      "Bash(cargo check:*)"
     ]
   }
 }

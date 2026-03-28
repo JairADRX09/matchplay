@@ -11,6 +11,7 @@ pub enum ClientMessage {
         mode: GameMode,
         rank: RankTier,
         game_ids: Vec<GameID>,
+        max_slots: u8,
     },
     Subscribe {
         filters: Vec<SubscriptionFilter>,
@@ -33,6 +34,9 @@ pub enum ServerMessage {
     CardRemoved {
         card_id: CardId,
     },
+    CardUpdated {
+        card: Card,
+    },
     Handshake {
         card_id: CardId,
         joiner_ids: Vec<GameID>,
@@ -44,6 +48,9 @@ pub enum ServerMessage {
     Error {
         code: ErrorCode,
         message: String,
+    },
+    Stats {
+        connected: u32,
     },
 }
 

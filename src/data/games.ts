@@ -14,6 +14,7 @@ export interface GameDef {
   icon: string;
   platforms: PlatformDef[];
   ranks: RankTier[];
+  maxPlayers: number; // max lobby size (min is always 2)
 }
 
 export const GAMES: GameDef[] = [
@@ -35,6 +36,26 @@ export const GAMES: GameDef[] = [
       { label: "Immortal", ordinal: 7 },
       { label: "Radiant", ordinal: 8 },
     ],
+    maxPlayers: 5,
+  },
+  {
+    id: "Fortnite",
+    label: "Fortnite",
+    short: "FN",
+    color: "#00d4ff",
+    icon: "⚡",
+    platforms: [{ id: "epic", label: "Epic Username", placeholder: "YourUsername" }],
+    ranks: [
+      { label: "Bronze", ordinal: 0 },
+      { label: "Silver", ordinal: 1 },
+      { label: "Gold", ordinal: 2 },
+      { label: "Platinum", ordinal: 3 },
+      { label: "Diamond", ordinal: 4 },
+      { label: "Elite", ordinal: 5 },
+      { label: "Champion", ordinal: 6 },
+      { label: "Unreal", ordinal: 7 },
+    ],
+    maxPlayers: 4,
   },
   {
     id: "LeagueOfLegends",
@@ -55,6 +76,7 @@ export const GAMES: GameDef[] = [
       { label: "Grandmaster", ordinal: 8 },
       { label: "Challenger", ordinal: 9 },
     ],
+    maxPlayers: 5,
   },
   {
     id: "CS2",
@@ -84,30 +106,7 @@ export const GAMES: GameDef[] = [
       { label: "Supreme", ordinal: 11 },
       { label: "Global Elite", ordinal: 12 },
     ],
-  },
-  {
-    id: "Dota2",
-    label: "Dota 2",
-    short: "D2",
-    color: "#c23c2a",
-    icon: "⬟",
-    platforms: [
-      {
-        id: "steam",
-        label: "Steam Profile URL",
-        placeholder: "https://steamcommunity.com/id/...",
-      },
-    ],
-    ranks: [
-      { label: "Herald", ordinal: 0 },
-      { label: "Guardian", ordinal: 1 },
-      { label: "Crusader", ordinal: 2 },
-      { label: "Archon", ordinal: 3 },
-      { label: "Legend", ordinal: 4 },
-      { label: "Ancient", ordinal: 5 },
-      { label: "Divine", ordinal: 6 },
-      { label: "Immortal", ordinal: 7 },
-    ],
+    maxPlayers: 5,
   },
   {
     id: "ApexLegends",
@@ -125,6 +124,7 @@ export const GAMES: GameDef[] = [
       { label: "Master", ordinal: 5 },
       { label: "Predator", ordinal: 6 },
     ],
+    maxPlayers: 3,
   },
   {
     id: "Overwatch2",
@@ -145,6 +145,55 @@ export const GAMES: GameDef[] = [
       { label: "Grandmaster", ordinal: 6 },
       { label: "Champion", ordinal: 7 },
     ],
+    maxPlayers: 6,
+  },
+  {
+    id: "RocketLeague",
+    label: "Rocket League",
+    short: "RL",
+    color: "#5b9bd5",
+    icon: "◉",
+    platforms: [
+      { id: "epic", label: "Epic Username", placeholder: "YourUsername" },
+    ],
+    ranks: [
+      { label: "Bronze", ordinal: 0 },
+      { label: "Silver", ordinal: 1 },
+      { label: "Gold", ordinal: 2 },
+      { label: "Platinum", ordinal: 3 },
+      { label: "Diamond", ordinal: 4 },
+      { label: "Champion", ordinal: 5 },
+      { label: "Grand Champion", ordinal: 6 },
+      { label: "Supersonic Legend", ordinal: 7 },
+    ],
+    maxPlayers: 3,
+  },
+  {
+    id: "Deadlock",
+    label: "Deadlock",
+    short: "DL",
+    color: "#8a6fff",
+    icon: "⬖",
+    platforms: [
+      {
+        id: "steam",
+        label: "Steam Profile URL",
+        placeholder: "https://steamcommunity.com/id/...",
+      },
+    ],
+    ranks: [
+      { label: "Seeker", ordinal: 0 },
+      { label: "Alchemist", ordinal: 1 },
+      { label: "Arcanist", ordinal: 2 },
+      { label: "Ritualist", ordinal: 3 },
+      { label: "Emissary", ordinal: 4 },
+      { label: "Archon", ordinal: 5 },
+      { label: "Oracle", ordinal: 6 },
+      { label: "Phantom", ordinal: 7 },
+      { label: "Ascendant", ordinal: 8 },
+      { label: "Eternus", ordinal: 9 },
+    ],
+    maxPlayers: 6,
   },
 ];
 

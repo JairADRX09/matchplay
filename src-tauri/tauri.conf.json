@@ -13,10 +13,10 @@
     "windows": [
       {
         "title": "Macu",
-        "width": 460,
-        "height": 700,
-        "minWidth": 460,
-        "minHeight": 600,
+        "width": 324,
+        "height": 780,
+        "minWidth": 324,
+        "minHeight": 500,
         "resizable": true,
         "center": true
       }

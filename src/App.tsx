@@ -1,33 +1,30 @@
 import { useState, useEffect } from "react";
-import { usePulseStore } from "./stores/pulse-store";
 import { useWebSocket } from "./hooks/useWebSocket";
-import { PulsePanel } from "./components/PulsePanel";
-import { SetupView } from "./components/SetupView";
-import { SettingsView } from "./components/SettingsView";
-import { HandshakeModal } from "./components/HandshakeModal";
+import { PulseSidebar } from "./components/PulseSidebar";
 import { LandingPage } from "./pages/LandingPage";
 import "./styles/global.css";
 
-// Determines the initial route from the URL path
+// Running inside Tauri desktop shell?
+const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
 function getInitialRoute(): "landing" | "app" {
+  if (IS_TAURI) return "app"; // skip landing in desktop app
   return window.location.pathname.startsWith("/app") ? "app" : "landing";
 }
 
 export function App() {
   const [route, setRoute] = useState<"landing" | "app">(getInitialRoute);
-  const view = usePulseStore((s) => s.view);
-  const handshake = usePulseStore((s) => s.handshake);
 
-  // Keep URL in sync with route state
   useEffect(() => {
+    if (IS_TAURI) return; // no URL management needed in Tauri
     const newPath = route === "app" ? "/app" : "/";
     if (window.location.pathname !== newPath) {
       window.history.pushState({}, "", newPath);
     }
   }, [route]);
 
-  // Handle browser back/forward
   useEffect(() => {
+    if (IS_TAURI) return;
     const handler = () => setRoute(getInitialRoute());
     window.addEventListener("popstate", handler);
     return () => window.removeEventListener("popstate", handler);
@@ -37,27 +34,14 @@ export function App() {
     return <LandingPage onLaunch={() => setRoute("app")} />;
   }
 
-  return <PulseApp view={view} handshake={!!handshake} />;
+  return <MacuApp />;
 }
 
-// ─── The actual matchmaking app ───────────────────────────────────────────────
-function PulseApp({ view, handshake }: { view: string; handshake: boolean }) {
+function MacuApp() {
   useWebSocket();
-
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 20,
-      }}
-    >
-      {view === "setup" && <SetupView />}
-      {view === "feed" && <PulsePanel />}
-      {view === "settings" && <SettingsView />}
-      {handshake && <HandshakeModal />}
+    <div style={{ minHeight: "100vh", background: "#270038" }}>
+      <PulseSidebar isTauri={IS_TAURI} />
     </div>
   );
 }

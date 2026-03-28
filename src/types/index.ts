@@ -21,6 +21,8 @@ export interface Card {
   mode: GameMode;
   rank: RankTier;
   created_at: number; // unix seconds
+  slots: number;      // current players
+  max_slots: number;  // maximum players
 }
 
 export interface SubscriptionFilter {
@@ -44,6 +46,7 @@ export type ClientMessage =
       mode: GameMode;
       rank: RankTier;
       game_ids: GameID[];
+      max_slots: number;
     }
   | { type: "Subscribe"; filters: SubscriptionFilter[] }
   | { type: "JoinCard"; card_id: CardId; game_ids: GameID[] }
@@ -54,6 +57,8 @@ export type ClientMessage =
 export type ServerMessage =
   | { type: "NewCard"; card: Card }
   | { type: "CardRemoved"; card_id: CardId }
+  | { type: "CardUpdated"; card: Card }
   | { type: "Handshake"; card_id: CardId; joiner_ids: GameID[] }
   | { type: "HandshakeAccepted"; card_id: CardId; host_ids: GameID[] }
-  | { type: "Error"; code: ErrorCode; message: string };
+  | { type: "Error"; code: ErrorCode; message: string }
+  | { type: "Stats"; connected: number };

@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { setWsSend } from "../lib/ws";
 import { usePulseStore } from "../stores/pulse-store";
 import type { ServerMessage } from "../types";
-import { getGame } from "../data/games";
 
 const WS_URL = (import.meta.env.VITE_WS_URL as string | undefined) ?? "ws://localhost:8080/ws";
 const MAX_BACKOFF_MS = 30_000;
@@ -47,32 +46,53 @@ export function useWebSocket(): void {
         case "CardRemoved":
           store.removeCard(msg.card_id);
           break;
-        case "Handshake":
-          store.setHandshake({
-            cardId: msg.card_id,
-            ids: msg.joiner_ids,
-            kind: "host",
-            game: store.myCardId
-              ? (store.cards.find((c) => c.id === msg.card_id)?.game ?? "")
-              : "",
-          });
+        case "CardUpdated":
+          store.updateCard(msg.card);
           break;
+        case "Handshake": {
+          // Host receives notification that someone joined their lobby
+          const existingHandshake = store.handshake;
+          if (existingHandshake && existingHandshake.kind === "host") {
+            // Append new joiner IDs to existing lobby view
+            store.appendHandshakeIds(msg.joiner_ids);
+          } else {
+            // Shouldn't happen normally but handle gracefully
+            const card = store.cards.find((c) => c.id === msg.card_id);
+            store.setHandshake({
+              cardId: msg.card_id,
+              ids: msg.joiner_ids,
+              kind: "host",
+              game: card?.game ?? "",
+              createdAt: card?.created_at ?? Math.floor(Date.now() / 1000),
+            });
+          }
+          break;
+        }
         case "HandshakeAccepted": {
+          // Joiner receives lobby state after joining
           const card = store.cards.find((c) => c.id === msg.card_id);
           store.setHandshake({
             cardId: msg.card_id,
             ids: msg.host_ids,
             kind: "joiner",
             game: card?.game ?? "",
+            createdAt: card?.created_at ?? Math.floor(Date.now() / 1000),
           });
           break;
         }
+        case "Stats":
+          store.setConnectedCount(msg.connected);
+          break;
         case "Error":
           if (msg.code === "RateLimited") {
-            store.clearPublishError(); // reset pending
-            usePulseStore.setState({ publishError: "Rate limited — wait a moment", pendingPublish: null });
+            store.clearPublishError();
+            usePulseStore.setState({
+              publishError: "Rate limited — wait a moment",
+              pendingPublish: null,
+              handshake: null,
+            });
           }
-          console.warn("[Pulse]", msg.code, msg.message);
+          console.warn("[Macu]", msg.code, msg.message);
           break;
       }
     };
@@ -105,6 +125,3 @@ export function useWebSocket(): void {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 }
-
-// Re-export to avoid unused import warning in useWebSocket.ts
-export { getGame as _getGame };

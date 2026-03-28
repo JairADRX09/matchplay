@@ -77,9 +77,28 @@ impl Hub {
         }
     }
 
+    pub fn broadcast_card_updated(&self, card: &Card) {
+        let rooms = self.rooms.read().unwrap();
+        for (key, room) in rooms.iter() {
+            if key.game == card.game && key.mode == card.mode {
+                room.broadcast(&protocol::ServerMessage::CardUpdated { card: card.clone() });
+            }
+        }
+    }
+
     pub fn get_connection(&self, conn_id: &str) -> Option<ConnectionHandle> {
         let conns = self.connections.read().unwrap();
         conns.get(conn_id).cloned()
+    }
+
+    /// Broadcasts the current connected client count to all connections.
+    pub fn broadcast_stats(&self) {
+        let conns = self.connections.read().unwrap();
+        let count = conns.len() as u32;
+        let msg = protocol::ServerMessage::Stats { connected: count };
+        for handle in conns.values() {
+            let _ = handle.send(msg.clone());
+        }
     }
 }
 
@@ -121,6 +140,8 @@ mod tests {
             mode: GameMode::Ranked,
             rank: protocol::RankTier { label: "Gold".to_string(), ordinal: 50 },
             created_at: 0,
+            slots: 1,
+            max_slots: 4,
         };
         hub.broadcast_new_card(&card);
 
@@ -151,6 +172,8 @@ mod tests {
             mode: GameMode::Ranked,
             rank: protocol::RankTier { label: "Gold".to_string(), ordinal: 50 },
             created_at: 0,
+            slots: 1,
+            max_slots: 4,
         };
         hub.broadcast_new_card(&card);
 
