@@ -70,12 +70,15 @@ export function useWebSocket(): void {
         }
         case "HandshakeAccepted": {
           // Joiner receives lobby state after joining
+          // host_ids = host + previous joiners (NOT this joiner), so append own ID
           const card = store.cards.find((c) => c.id === msg.card_id);
+          const game = card?.game ?? "";
+          const ownId = store.userGameIds[game];
           store.setHandshake({
             cardId: msg.card_id,
-            ids: msg.host_ids,
+            ids: [...msg.host_ids, ...(ownId ? [ownId] : [])],
             kind: "joiner",
-            game: card?.game ?? "",
+            game,
             createdAt: card?.created_at ?? Math.floor(Date.now() / 1000),
           });
           break;

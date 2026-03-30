@@ -223,6 +223,11 @@ function QuickSearchView() {
     }
   }, [userGames, selGame]);
 
+  // Auto-update active filter when game dropdown changes
+  useEffect(() => {
+    if (activeFilter) setActiveFilter(selGame);
+  }, [selGame]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const now = Math.floor(Date.now() / 1000);
   const lobbies = cards.filter((c) => {
     if (c.id === myCardId) return false;
@@ -651,6 +656,7 @@ function LobbyCard({ card }: { card: Card }) {
 function LobbyRoomOverlay() {
   const handshake = usePulseStore((s) => s.handshake!);
   const myCardId = usePulseStore((s) => s.myCardId);
+  const userGameIds = usePulseStore((s) => s.userGameIds);
   const [, tick] = useState(0);
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -662,6 +668,18 @@ function LobbyRoomOverlay() {
   const elapsed = elapsedSecs(handshake.createdAt);
   const remaining = Math.max(0, CARD_TTL_SECS - elapsed);
   const game = getGame(handshake.game);
+  const ownId = userGameIds[handshake.game];
+
+  // Auto-close when timer expires
+  useEffect(() => {
+    if (remaining === 0) {
+      if (handshake.kind === "host" && myCardId) {
+        usePulseStore.getState().dismissCard(myCardId);
+      } else {
+        usePulseStore.getState().clearHandshake();
+      }
+    }
+  }, [remaining, handshake.kind, myCardId]);
 
   const copyTag = useCallback((tag: string) => {
     const doFallback = () => {
@@ -755,9 +773,10 @@ function LobbyRoomOverlay() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-          {handshake.ids.map((gid, i) => {
+          {[...handshake.ids].reverse().map((gid, i) => {
             const tag = gid.username;
             const isCopied = copied === tag;
+            const isOwn = ownId && gid.platform === ownId.platform && gid.username === ownId.username;
             return (
               <div
                 key={i}
@@ -766,30 +785,34 @@ function LobbyRoomOverlay() {
                   alignItems: "center",
                   gap: 9,
                   padding: "9px 11px",
-                  background: C.surface,
-                  border: `1px solid ${C.border}`,
+                  background: isOwn ? "rgba(0,255,163,0.06)" : C.surface,
+                  border: `1px solid ${isOwn ? "rgba(0,255,163,0.25)" : C.border}`,
                   borderRadius: C.radius,
                 }}
               >
-                <span style={{ color: C.accent, fontSize: 10 }}>●</span>
+                <span style={{ color: isOwn ? C.accent : C.textMid, fontSize: 10 }}>●</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 12 }}>{tag}</div>
+                  <div style={{ fontWeight: 600, fontSize: 12, color: isOwn ? C.accent : C.text }}>
+                    {tag} {isOwn && <span style={{ fontSize: 9, opacity: 0.6 }}>(tú)</span>}
+                  </div>
                   <div style={{ fontSize: 10, color: C.textMid }}>{gid.platform}</div>
                 </div>
-                <button
-                  onClick={() => copyTag(tag)}
-                  style={{
-                    padding: "3px 9px",
-                    background: isCopied ? C.accentDim : "none",
-                    border: `1px solid ${isCopied ? C.accent : C.border}`,
-                    borderRadius: 4,
-                    color: isCopied ? C.accent : C.textMid,
-                    cursor: "pointer",
-                    fontSize: 10,
-                  }}
-                >
-                  {isCopied ? "✓" : "COPY"}
-                </button>
+                {!isOwn && (
+                  <button
+                    onClick={() => copyTag(tag)}
+                    style={{
+                      padding: "3px 9px",
+                      background: isCopied ? C.accentDim : "none",
+                      border: `1px solid ${isCopied ? C.accent : C.border}`,
+                      borderRadius: 4,
+                      color: isCopied ? C.accent : C.textMid,
+                      cursor: "pointer",
+                      fontSize: 10,
+                    }}
+                  >
+                    {isCopied ? "✓" : "COPY"}
+                  </button>
+                )}
               </div>
             );
           })}
