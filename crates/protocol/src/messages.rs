@@ -52,6 +52,10 @@ pub enum ServerMessage {
     Stats {
         connected: u32,
     },
+    LobbyUpdated {
+        card_id: CardId,
+        member_ids: Vec<GameID>,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

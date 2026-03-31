@@ -91,6 +91,20 @@ impl Hub {
         conns.get(conn_id).cloned()
     }
 
+    /// Sends a LobbyUpdated message directly to all specified connections.
+    pub fn broadcast_lobby_updated(&self, card_id: &str, member_ids: Vec<protocol::GameID>, conn_ids: &[String]) {
+        let msg = protocol::ServerMessage::LobbyUpdated {
+            card_id: card_id.to_string(),
+            member_ids,
+        };
+        let conns = self.connections.read().unwrap();
+        for conn_id in conn_ids {
+            if let Some(handle) = conns.get(conn_id) {
+                let _ = handle.send(msg.clone());
+            }
+        }
+    }
+
     /// Broadcasts the current connected client count to all connections.
     pub fn broadcast_stats(&self) {
         let conns = self.connections.read().unwrap();

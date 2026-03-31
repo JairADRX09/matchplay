@@ -83,10 +83,19 @@ async fn handle_socket(socket: axum::extract::ws::WebSocket, state: AppState) {
         }
     }
 
-    // Cleanup: remove published cards and broadcast their removal
+    // Cleanup: remove hosted cards
     for card_id in state.store.get_by_connection(&conn_id) {
         state.store.remove(&card_id);
         state.hub.broadcast_card_removed(&card_id);
+    }
+    // Cleanup: remove from any lobbies this connection had joined
+    for card_id in state.store.get_lobbies_as_member(&conn_id) {
+        if let Some((updated_card, all_ids, all_conn_ids)) =
+            state.store.remove_member(&card_id, &conn_id)
+        {
+            state.hub.broadcast_card_updated(&updated_card);
+            state.hub.broadcast_lobby_updated(&card_id, all_ids, &all_conn_ids);
+        }
     }
     state.hub.unsubscribe(&conn_id);
     state.hub.unregister_connection(&conn_id);

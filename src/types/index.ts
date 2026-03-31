@@ -61,4 +61,5 @@ export type ServerMessage =
   | { type: "Handshake"; card_id: CardId; joiner_ids: GameID[] }
   | { type: "HandshakeAccepted"; card_id: CardId; host_ids: GameID[] }
   | { type: "Error"; code: ErrorCode; message: string }
-  | { type: "Stats"; connected: number };
+  | { type: "Stats"; connected: number }
+  | { type: "LobbyUpdated"; card_id: CardId; member_ids: GameID[] };

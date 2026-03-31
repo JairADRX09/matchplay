@@ -60,6 +60,7 @@ interface PulseState {
   setConnectedCount: (n: number) => void;
   setHandshake: (hs: HandshakeState) => void;
   appendHandshakeIds: (ids: GameID[]) => void;
+  syncLobbyIds: (cardId: CardId, ids: GameID[]) => void;
   clearHandshake: () => void;
   setView: (v: AppView) => void;
   toggleGameFilter: (game: GameTag) => void;
@@ -158,6 +159,12 @@ export const usePulseStore = create<PulseState>((set, get) => ({
           ids: [...s.handshake.ids, ...ids],
         },
       };
+    }),
+
+  syncLobbyIds: (cardId, ids) =>
+    set((s) => {
+      if (!s.handshake || s.handshake.cardId !== cardId) return s;
+      return { handshake: { ...s.handshake, ids } };
     }),
 
   clearHandshake: () => set({ handshake: null }),

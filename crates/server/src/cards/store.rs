@@ -85,6 +85,48 @@ impl CardStore {
         Some((stored.card.clone(), existing_ids, host_conn_id))
     }
 
+    /// Finds all lobby card IDs where the given connection is a joiner (not host).
+    pub fn get_lobbies_as_member(&self, conn_id: &str) -> Vec<CardId> {
+        self.inner
+            .read()
+            .unwrap()
+            .values()
+            .filter(|s| s.members.iter().any(|(cid, _)| cid == conn_id))
+            .map(|s| s.card.id.clone())
+            .collect()
+    }
+
+    /// Removes a joiner from a lobby and decrements the slot count.
+    /// Returns `(updated_card, all_remaining_member_ids, all_member_conn_ids)` on success.
+    pub fn remove_member(
+        &self,
+        card_id: &str,
+        conn_id: &str,
+    ) -> Option<(Card, Vec<GameID>, Vec<String>)> {
+        let mut store = self.inner.write().unwrap();
+        let stored = store.get_mut(card_id)?;
+
+        let before = stored.members.len();
+        stored.members.retain(|(cid, _)| cid != conn_id);
+        if stored.members.len() == before {
+            return None; // wasn't a member
+        }
+        stored.card.slots = stored.card.slots.saturating_sub(1);
+
+        let all_ids: Vec<GameID> = stored
+            .host_game_ids
+            .iter()
+            .chain(stored.members.iter().flat_map(|(_, ids)| ids.iter()))
+            .cloned()
+            .collect();
+
+        let all_conn_ids: Vec<String> = std::iter::once(stored.host_conn_id.clone())
+            .chain(stored.members.iter().map(|(cid, _)| cid.clone()))
+            .collect();
+
+        Some((stored.card.clone(), all_ids, all_conn_ids))
+    }
+
     /// Removes all expired cards and returns their IDs.
     pub fn reap(&self, ttl_secs: u64) -> Vec<CardId> {
         let now = SystemTime::now()

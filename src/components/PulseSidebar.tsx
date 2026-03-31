@@ -209,7 +209,6 @@ function QuickSearchView() {
   const myCardId = usePulseStore((s) => s.myCardId);
   const userGames = usePulseStore((s) => s.userGames);
   const [selGame, setSelGame] = useState<GameTag>(userGames[0] ?? "");
-  const [activeFilter, setActiveFilter] = useState<GameTag>("");
   const [, tick] = useState(0);
 
   useEffect(() => {
@@ -223,16 +222,12 @@ function QuickSearchView() {
     }
   }, [userGames, selGame]);
 
-  // Auto-update active filter when game dropdown changes
-  useEffect(() => {
-    if (activeFilter) setActiveFilter(selGame);
-  }, [selGame]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const now = Math.floor(Date.now() / 1000);
+  // Always filter by the selected game — updates instantly when dropdown changes
   const lobbies = cards.filter((c) => {
     if (c.id === myCardId) return false;
     if (now - c.created_at >= CARD_TTL_SECS) return false;
-    if (activeFilter && c.game !== activeFilter) return false;
+    if (selGame && c.game !== selGame) return false;
     return true;
   });
 
@@ -242,48 +237,21 @@ function QuickSearchView() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Game filter + search bar */}
+      {/* Game selector — filter updates instantly */}
       <div style={{ padding: "10px 10px 8px", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-        <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
-          <select
-            value={selGame}
-            onChange={(e) => setSelGame(e.target.value)}
-            style={{ ...selectStyle, flex: 1, padding: "7px 8px", fontSize: 12 }}
-          >
-            {GAMES.filter((g) => userGames.includes(g.id)).map((g) => (
-              <option key={g.id} value={g.id}>{g.label}</option>
-            ))}
-          </select>
-          <button
-            onClick={() => setActiveFilter((f) => (f === selGame ? "" : selGame))}
-            style={{
-              padding: "7px 12px",
-              background: activeFilter === selGame && selGame ? C.accentDim : C.surface,
-              border: `1px solid ${activeFilter === selGame && selGame ? C.accent : C.border}`,
-              borderRadius: C.radius,
-              color: activeFilter === selGame && selGame ? C.accent : C.text,
-              cursor: "pointer",
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: 1,
-              flexShrink: 0,
-            }}
-          >
-            BUSCAR
-          </button>
+        <select
+          value={selGame}
+          onChange={(e) => setSelGame(e.target.value)}
+          style={{ ...selectStyle, padding: "7px 8px", fontSize: 12 }}
+        >
+          {GAMES.filter((g) => userGames.includes(g.id)).map((g) => (
+            <option key={g.id} value={g.id}>{g.label}</option>
+          ))}
+        </select>
+        <div style={{ marginTop: 6, fontSize: 11, color: C.textMid }}>
+          Lobbies de{" "}
+          <strong style={{ color: C.accent }}>{getGame(selGame)?.label ?? selGame}</strong>
         </div>
-        {activeFilter && (
-          <div style={{ marginTop: 6, fontSize: 11, color: C.textMid }}>
-            Mostrando: <strong style={{ color: C.accent }}>{getGame(activeFilter)?.label ?? activeFilter}</strong>
-            {" · "}
-            <button
-              onClick={() => setActiveFilter("")}
-              style={{ background: "none", border: "none", color: C.textDim, cursor: "pointer", fontSize: 11, padding: 0 }}
-            >
-              ver todos ×
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Lobby list */}
@@ -291,9 +259,7 @@ function QuickSearchView() {
         {lobbies.length === 0 ? (
           <div style={{ textAlign: "center", padding: 28, color: C.textDim }}>
             <div style={{ fontSize: 24, marginBottom: 7 }}>◌</div>
-            <div style={{ fontSize: 12 }}>
-              {activeFilter ? "Sin lobbies para este juego" : "Sin lobbies activos"}
-            </div>
+            <div style={{ fontSize: 12 }}>Sin lobbies para este juego</div>
             <div style={{ fontSize: 10, marginTop: 3 }}>Crea uno en la pestaña CREATE</div>
           </div>
         ) : (

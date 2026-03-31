@@ -83,6 +83,10 @@ export function useWebSocket(): void {
           });
           break;
         }
+        case "LobbyUpdated":
+          // Server sends full member list after any join/leave event
+          store.syncLobbyIds(msg.card_id, msg.member_ids);
+          break;
         case "Stats":
           store.setConnectedCount(msg.connected);
           break;
