@@ -7,9 +7,9 @@ services:
     healthCheckPath: /health
     envVars:
       - key: CARD_TTL_SECS
-        value: "300"
+        value: "60"
       - key: REAPER_INTERVAL_SECS
-        value: "15"
+        value: "5"
       - key: RATE_LIMIT_CARDS_PER_MIN
         value: "2"
       - key: RATE_LIMIT_JOINS_PER_MIN
