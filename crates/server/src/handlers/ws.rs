@@ -163,6 +163,10 @@ fn handle_client_message(
 
         ClientMessage::Subscribe { filters } => {
             state.hub.subscribe(conn_id, tx.clone(), &filters);
+            // Send snapshot of all existing cards matching these filters
+            for card in state.store.get_matching(&filters) {
+                let _ = tx.send(ServerMessage::NewCard { card });
+            }
             debug!(conn_id = %conn_id, filters = filters.len(), "Subscribed");
         }
 
@@ -190,21 +194,27 @@ fn handle_client_message(
                                 message: "Lobby is full or not found".to_string(),
                             });
                         }
-                        Some((updated_card, existing_ids, host_conn_id)) => {
-                            // Send HandshakeAccepted to joiner with all existing member IDs
+                        Some(result) => {
+                            // Tell joiner: accepted + IDs of members BEFORE this join
                             let _ = tx.send(ServerMessage::HandshakeAccepted {
                                 card_id: card_id.clone(),
-                                host_ids: existing_ids,
+                                host_ids: result.existing_ids,
                             });
-                            // Notify host about new joiner
-                            if let Some(host_tx) = state.hub.get_connection(&host_conn_id) {
+                            // Notify host: new joiner arrived
+                            if let Some(host_tx) = state.hub.get_connection(&result.host_conn_id) {
                                 let _ = host_tx.send(ServerMessage::Handshake {
                                     card_id: card_id.clone(),
                                     joiner_ids: game_ids,
                                 });
                             }
-                            // Broadcast updated slot count to all subscribers
-                            state.hub.broadcast_card_updated(&updated_card);
+                            // Update slot count for all browse-view subscribers
+                            state.hub.broadcast_card_updated(&result.updated_card);
+                            // Send authoritative full member list to every lobby member
+                            state.hub.broadcast_lobby_updated(
+                                &card_id,
+                                result.all_game_ids,
+                                &result.all_conn_ids,
+                            );
                             info!(conn_id = %conn_id, "Joined lobby {}", card_id);
                         }
                     }

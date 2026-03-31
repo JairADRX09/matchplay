@@ -32,6 +32,7 @@ mod tests {
             mode: GameMode::Ranked,
             rank: make_rank(),
             game_ids: vec![make_game_id()],
+            max_slots: 4,
         };
         let json = serde_json::to_string(&msg).unwrap();
         let val: Value = serde_json::from_str(&json).unwrap();
@@ -90,6 +91,8 @@ mod tests {
                 mode: GameMode::Ranked,
                 rank: make_rank(),
                 created_at: 1000,
+                slots: 1,
+                max_slots: 4,
             },
         };
         let json = serde_json::to_string(&msg).unwrap();

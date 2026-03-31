@@ -50,33 +50,31 @@ export function useWebSocket(): void {
           store.updateCard(msg.card);
           break;
         case "Handshake": {
-          // Host receives notification that someone joined their lobby
+          // Host is notified a new player joined.
+          // Do NOT mutate ids here — LobbyUpdated will deliver the authoritative full list.
+          // Just ensure the lobby room overlay is open.
           const existingHandshake = store.handshake;
-          if (existingHandshake && existingHandshake.kind === "host") {
-            // Append new joiner IDs to existing lobby view
-            store.appendHandshakeIds(msg.joiner_ids);
-          } else {
-            // Shouldn't happen normally but handle gracefully
+          if (!existingHandshake || existingHandshake.cardId !== msg.card_id) {
             const card = store.cards.find((c) => c.id === msg.card_id);
             store.setHandshake({
               cardId: msg.card_id,
-              ids: msg.joiner_ids,
+              ids: [], // LobbyUpdated will fill this immediately after
               kind: "host",
               game: card?.game ?? "",
               createdAt: card?.created_at ?? Math.floor(Date.now() / 1000),
             });
           }
+          // LobbyUpdated (sent right after by server) will sync the full member list
           break;
         }
         case "HandshakeAccepted": {
-          // Joiner receives lobby state after joining
-          // host_ids = host + previous joiners (NOT this joiner), so append own ID
+          // Joiner is accepted — open the lobby room.
+          // host_ids has IDs of members before this join; LobbyUpdated will deliver the full list.
           const card = store.cards.find((c) => c.id === msg.card_id);
           const game = card?.game ?? "";
-          const ownId = store.userGameIds[game];
           store.setHandshake({
             cardId: msg.card_id,
-            ids: [...msg.host_ids, ...(ownId ? [ownId] : [])],
+            ids: msg.host_ids, // partial — LobbyUpdated will overwrite with complete list
             kind: "joiner",
             game,
             createdAt: card?.created_at ?? Math.floor(Date.now() / 1000),

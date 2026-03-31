@@ -2,7 +2,21 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use protocol::{Card, CardId, GameID};
+use protocol::{Card, CardId, GameID, SubscriptionFilter};
+
+/// Result of a successful `CardStore::add_member` call.
+#[derive(Debug)]
+pub struct JoinResult {
+    pub updated_card: Card,
+    /// IDs of host + previous joiners, NOT including this new joiner (for HandshakeAccepted).
+    pub existing_ids: Vec<GameID>,
+    /// IDs of ALL members after this join, including new joiner (for LobbyUpdated broadcast).
+    pub all_game_ids: Vec<GameID>,
+    /// Connection IDs of ALL members after this join (for LobbyUpdated routing).
+    pub all_conn_ids: Vec<String>,
+    /// Host connection ID (for Handshake notification).
+    pub host_conn_id: String,
+}
 
 #[derive(Debug, Clone)]
 pub struct StoredCard {
@@ -53,16 +67,14 @@ impl CardStore {
             .collect()
     }
 
-    /// Adds a joiner to the lobby and increments the slot count.
-    /// Returns `(updated_card, existing_member_ids, host_conn_id)` on success.
-    /// `existing_member_ids` contains host + all previous joiners (NOT the new one).
-    /// Returns `None` if the card is not found or already full.
+    /// Adds a joiner to the lobby, increments slot count.
+    /// Returns `JoinResult` or `None` if full / not found.
     pub fn add_member(
         &self,
         card_id: &str,
         conn_id: String,
         game_ids: Vec<GameID>,
-    ) -> Option<(Card, Vec<GameID>, String)> {
+    ) -> Option<JoinResult> {
         let mut store = self.inner.write().unwrap();
         let stored = store.get_mut(card_id)?;
 
@@ -70,6 +82,7 @@ impl CardStore {
             return None; // lobby full
         }
 
+        // Snapshot IDs before adding the new joiner (for HandshakeAccepted)
         let existing_ids: Vec<GameID> = stored
             .host_game_ids
             .iter()
@@ -79,10 +92,46 @@ impl CardStore {
 
         let host_conn_id = stored.host_conn_id.clone();
 
-        stored.members.push((conn_id, game_ids));
+        // Add the new joiner
+        stored.members.push((conn_id.clone(), game_ids));
         stored.card.slots += 1;
 
-        Some((stored.card.clone(), existing_ids, host_conn_id))
+        // Snapshot ALL IDs + conn IDs after adding (for LobbyUpdated)
+        let all_game_ids: Vec<GameID> = stored
+            .host_game_ids
+            .iter()
+            .chain(stored.members.iter().flat_map(|(_, ids)| ids.iter()))
+            .cloned()
+            .collect();
+
+        let all_conn_ids: Vec<String> = std::iter::once(stored.host_conn_id.clone())
+            .chain(stored.members.iter().map(|(cid, _)| cid.clone()))
+            .collect();
+
+        Some(JoinResult {
+            updated_card: stored.card.clone(),
+            existing_ids,
+            all_game_ids,
+            all_conn_ids,
+            host_conn_id,
+        })
+    }
+
+    /// Returns all currently stored cards that match any of the given subscription filters.
+    /// Used to send existing state to a newly subscribing client.
+    pub fn get_matching(&self, filters: &[SubscriptionFilter]) -> Vec<Card> {
+        self.inner
+            .read()
+            .unwrap()
+            .values()
+            .filter(|s| {
+                filters.iter().any(|f| {
+                    f.game == s.card.game
+                        && f.mode.as_ref().map_or(true, |m| m == &s.card.mode)
+                })
+            })
+            .map(|s| s.card.clone())
+            .collect()
     }
 
     /// Finds all lobby card IDs where the given connection is a joiner (not host).
@@ -238,10 +287,12 @@ mod tests {
         let result = store.add_member("card-1", "joiner-conn".to_string(), vec![joiner_id]);
 
         assert!(result.is_some());
-        let (updated_card, existing_ids, host_conn_id) = result.unwrap();
-        assert_eq!(updated_card.slots, 2);
-        assert_eq!(host_conn_id, "host-conn");
-        assert_eq!(existing_ids.len(), 1); // just host's ID
+        let r = result.unwrap();
+        assert_eq!(r.updated_card.slots, 2);
+        assert_eq!(r.host_conn_id, "host-conn");
+        assert_eq!(r.existing_ids.len(), 1); // just host's ID (before join)
+        assert_eq!(r.all_game_ids.len(), 2); // host + new joiner
+        assert_eq!(r.all_conn_ids.len(), 2); // host-conn + joiner-conn
     }
 
     #[test]
