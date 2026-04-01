@@ -69,6 +69,7 @@ interface PulseState {
   setUserConfig: (games: GameTag[], gameIds: Record<GameTag, GameID>) => void;
   publishCard: (game: GameTag, mode: GameMode, rank: RankTier, maxSlots?: number) => void;
   joinCard: (cardId: CardId, gameTag: GameTag) => void;
+  leaveCard: (cardId: CardId) => void;
   dismissCard: (cardId: CardId) => void;
   resubscribe: () => void;
   clearPublishError: () => void;
@@ -220,6 +221,12 @@ export const usePulseStore = create<PulseState>((set, get) => ({
     const gameId = userGameIds[gameTag];
     if (!gameId) return;
     wsSend({ type: "JoinCard", card_id: cardId, game_ids: [gameId] });
+  },
+
+  leaveCard: (cardId) => {
+    // Notify server so it frees the slot and updates remaining members
+    wsSend({ type: "LeaveCard", card_id: cardId });
+    set({ handshake: null });
   },
 
   dismissCard: (cardId) => {

@@ -50,7 +50,8 @@ export type ClientMessage =
     }
   | { type: "Subscribe"; filters: SubscriptionFilter[] }
   | { type: "JoinCard"; card_id: CardId; game_ids: GameID[] }
-  | { type: "DismissCard"; card_id: CardId };
+  | { type: "DismissCard"; card_id: CardId }
+  | { type: "LeaveCard"; card_id: CardId };
 
 // ── ServerMessage — discriminated union matching serde(tag = "type") ──────────
 

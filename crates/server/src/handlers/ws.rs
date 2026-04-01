@@ -228,5 +228,17 @@ fn handle_client_message(
                 info!(conn_id = %conn_id, card_id = %card_id, "Card dismissed");
             }
         }
+
+        ClientMessage::LeaveCard { card_id } => {
+            if let Some((updated_card, all_ids, all_conn_ids)) =
+                state.store.remove_member(&card_id, conn_id)
+            {
+                // Free the slot so others can join
+                state.hub.broadcast_card_updated(&updated_card);
+                // Tell remaining lobby members this player left
+                state.hub.broadcast_lobby_updated(&card_id, all_ids, &all_conn_ids);
+                info!(conn_id = %conn_id, card_id = %card_id, "Left lobby");
+            }
+        }
     }
 }

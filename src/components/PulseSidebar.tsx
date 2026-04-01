@@ -642,10 +642,11 @@ function LobbyRoomOverlay() {
       if (handshake.kind === "host" && myCardId) {
         usePulseStore.getState().dismissCard(myCardId);
       } else {
-        usePulseStore.getState().clearHandshake();
+        // Joiner: free the slot on the server before closing
+        usePulseStore.getState().leaveCard(handshake.cardId);
       }
     }
-  }, [remaining, handshake.kind, myCardId]);
+  }, [remaining, handshake.kind, myCardId, handshake.cardId]);
 
   const copyTag = useCallback((tag: string) => {
     const doFallback = () => {
@@ -668,9 +669,11 @@ function LobbyRoomOverlay() {
 
   const dismiss = () => {
     if (handshake.kind === "host" && myCardId) {
+      // Host destroys the whole lobby
       usePulseStore.getState().dismissCard(myCardId);
     } else {
-      usePulseStore.getState().clearHandshake();
+      // Joiner leaves — notify server to free the slot and update remaining members
+      usePulseStore.getState().leaveCard(handshake.cardId);
     }
   };
 

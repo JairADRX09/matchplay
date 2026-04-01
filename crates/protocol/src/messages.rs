@@ -23,6 +23,9 @@ pub enum ClientMessage {
     DismissCard {
         card_id: CardId,
     },
+    LeaveCard {
+        card_id: CardId,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
