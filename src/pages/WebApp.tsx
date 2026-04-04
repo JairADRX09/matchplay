@@ -3,7 +3,7 @@
  * Replaces MacuApp for non-Tauri environments.
  * The Tauri desktop app continues to use PulseSidebar unchanged.
  */
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { usePulseStore } from "../stores/pulse-store";
 import { GAMES, getGame } from "../data/games";
@@ -254,7 +254,7 @@ function LobbyRoomOverlay() {
         })}
         {/* Empty slots */}
         {Array.from({ length: Math.max(0, totalSlots - allIds.length) }).map((_, i) => (
-          <EmptySlotCard key={`empty-${i}`} accent={accent} />
+          <EmptySlotCard key={`empty-${i}`} />
         ))}
       </div>
 
@@ -335,7 +335,7 @@ function PlayerCard({ tag, platform, pokemonId: pid, accent, isOwn, copied, onCo
   );
 }
 
-function EmptySlotCard({ accent }: { accent: string }) {
+function EmptySlotCard() {
   return (
     <div style={{
       width: 200, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
