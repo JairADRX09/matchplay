@@ -44,7 +44,14 @@
       "Bash(npm run:*)",
       "Bash(CARGO_INCREMENTAL=0 C:/Users/jarmo/AppData/Local/puccinialin/puccinialin/Cache/cargo/bin/cargo.exe check -p protocol -p server)",
       "Bash(cargo build:*)",
-      "Bash(cargo check:*)"
+      "Bash(cargo check:*)",
+      "mcp__stitch__create_project",
+      "mcp__stitch__generate_screen_from_text",
+      "mcp__stitch__list_screens",
+      "WebFetch(domain:contribution.usercontent.google.com)",
+      "Bash(curl -s \"https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sX2QyOGIxODllMDdkZTQ4MjdhZDJjYjY3N2FmNDBjYjIyEgsSBxC3qqLrrhsYAZIBIwoKcHJvamVjdF9pZBIVQhM1NDE3NjYzNDE0ODI5MjAxNzA1&filename=&opi=96797242\" -o /tmp/pulse_lfg_screen.html)",
+      "Read(//tmp/**)",
+      "Bash(curl -s \"https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sX2QyOGIxODllMDdkZTQ4MjdhZDJjYjY3N2FmNDBjYjIyEgsSBxC3qqLrrhsYAZIBIwoKcHJvamVjdF9pZBIVQhM1NDE3NjYzNDE0ODI5MjAxNzA1&filename=&opi=96797242\")"
     ]
   }
 }
