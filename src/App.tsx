@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { PulseSidebar } from "./components/PulseSidebar";
 import { LandingPage } from "./pages/LandingPage";
+import { WebApp } from "./pages/WebApp";
 import "./styles/global.css";
 
 // Running inside Tauri desktop shell?
@@ -34,7 +35,8 @@ export function App() {
     return <LandingPage onLaunch={() => setRoute("app")} />;
   }
 
-  return <MacuApp />;
+  if (IS_TAURI) return <MacuApp />;
+  return <WebApp />;
 }
 
 function MacuApp() {
