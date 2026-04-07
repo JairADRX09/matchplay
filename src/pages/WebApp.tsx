@@ -20,6 +20,16 @@ import overwatchBg from "../images/overwatchhd.jpg";
 import rocketBg from "../images/rocketlhd.jpg";
 import marvelBg from "../images/marvelrhd.jpg";
 
+// Game logo images
+import valorantLogo from "../images/logos/valorantlogohd.jpg";
+import fortniteLogo from "../images/logos/logoFortinte.jpg";
+import lolLogo from "../images/logos/leagueoflegendslogohd.jpg";
+import cs2Logo from "../images/logos/countersrike2logohd.jpg";
+import apexLogo from "../images/logos/apexlogohd.jpg";
+import overwatchLogo from "../images/logos/pverwatchlogohd.jpg";
+import rocketLogo from "../images/logos/rockerleaguelogohd.jpg";
+import marvelLogo from "../images/logos/logomarvelrhd.jpg";
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 const MONO = "'JetBrains Mono', 'IBM Plex Mono', monospace";
 const DISPLAY = "Impact, 'Bebas Neue', sans-serif";
@@ -33,7 +43,18 @@ const BG_IMAGES: Record<string, string> = {
   ApexLegends: apexBg,
   Overwatch2: overwatchBg,
   RocketLeague: rocketBg,
-  Deadlock: marvelBg, // reuse closest aesthetic
+  MarvelRivals: marvelBg,
+};
+
+const GAME_LOGOS: Record<string, string> = {
+  Valorant: valorantLogo,
+  Fortnite: fortniteLogo,
+  LeagueOfLegends: lolLogo,
+  CS2: cs2Logo,
+  ApexLegends: apexLogo,
+  Overwatch2: overwatchLogo,
+  RocketLeague: rocketLogo,
+  MarvelRivals: marvelLogo,
 };
 
 // Stable pokemon sprite per username (1–1010)
@@ -454,7 +475,10 @@ function CreateLobbyModal({ gameId, accent, onClose }: { gameId: GameTag; accent
 
 // ─── Setup / Settings screens ─────────────────────────────────────────────────
 
-function SetupScreen({ isSettings = false }: { isSettings?: boolean }) {
+// SetupScreen — delegates to SettingsScreen (unified design)
+function SetupScreen() { return <SettingsScreen isSetup />; }
+
+function _OldSetupScreen_UNUSED({ isSettings = false }: { isSettings?: boolean }) {
   const userGames = usePulseStore(s => s.userGames);
   const userGameIds = usePulseStore(s => s.userGameIds);
   const setUserConfig = usePulseStore(s => s.setUserConfig);
@@ -875,6 +899,239 @@ function NavArrow({ dir, accent, onClick }: { dir: "left" | "right"; accent: str
   );
 }
 
+// ─── Settings Screen (Game Tags) ─────────────────────────────────────────────
+
+const GEAR_PATH = "M50 15C47.2 15 45 17.2 45 20V23.1C42 24.1 39.2 25.7 36.7 27.7L34.5 25.5C32.5 23.5 29.3 23.5 27.3 25.5L25.5 27.3C23.5 29.3 23.5 32.5 25.5 34.5L27.7 36.7C25.7 39.2 24.1 42 23.1 45H20C17.2 45 15 47.2 15 50C15 52.8 17.2 55 20 55H23.1C24.1 58 25.7 60.8 27.7 63.3L25.5 65.5C23.5 67.5 23.5 70.7 25.5 72.7L27.3 74.5C29.3 76.5 32.5 76.5 34.5 74.5L36.7 72.3C39.2 74.3 42 75.9 45 76.9V80C45 82.8 47.2 85 50 85C52.8 85 55 82.8 55 80V76.9C58 75.9 60.8 74.3 63.3 72.3L65.5 74.5C67.5 76.5 70.7 76.5 72.7 74.5L74.5 72.7C76.5 70.7 76.5 67.5 74.5 65.5L72.3 63.3C74.3 60.8 75.9 58 76.9 55H80C82.8 55 85 52.8 85 50C85 47.2 82.8 45 80 45H76.9C75.9 42 74.3 39.2 72.3 36.7L74.5 34.5C76.5 32.5 76.5 29.3 74.5 27.3L72.7 25.5C70.7 23.5 67.5 23.5 65.5 25.5L63.3 27.7C60.8 25.7 58 24.1 55 23.1V20C55 17.2 52.8 15 50 15ZM50 35C58.3 35 65 41.7 65 50C65 58.3 58.3 65 50 65C41.7 65 35 58.3 35 50C35 41.7 41.7 35 50 35Z";
+
+function GearSVG({ size, spin, color = "rgba(255,255,255,0.18)" }: { size: number; spin: "cw" | "ccw" | "none"; color?: string }) {
+  const anim =
+    spin === "cw" ? "gear-cw 2s linear infinite" :
+    spin === "ccw" ? "gear-ccw 2.5s linear infinite" : "none";
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"
+      style={{ animation: anim, display: "block", filter: spin !== "none" ? `drop-shadow(0 0 6px ${color})` : "none" }}>
+      <path d={GEAR_PATH} stroke={color} strokeWidth="2" />
+    </svg>
+  );
+}
+
+function GameLogoIcon({ gameId, color, size = 36, active = false }: { gameId: string; color: string; size?: number; active?: boolean }) {
+  const logo = GAME_LOGOS[gameId];
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: 2, flexShrink: 0, overflow: "hidden",
+      border: `1px solid ${active ? `${color}66` : "rgba(255,255,255,0.1)"}`,
+      background: logo ? "transparent" : (active ? `${color}22` : "rgba(255,255,255,0.05)"),
+      display: "flex", alignItems: "center", justifyContent: "center",
+      boxShadow: active ? `0 0 8px ${color}33` : "none",
+    }}>
+      {logo
+        ? <img src={logo} alt={gameId} style={{ width: "100%", height: "100%", objectFit: "cover", filter: active ? "none" : "grayscale(60%) brightness(0.6)" }} />
+        : <span style={{ fontFamily: MONO, fontSize: size * 0.27, fontWeight: 700, color: active ? color : "rgba(255,255,255,0.35)" }}>
+            {GAMES.find(g => g.id === gameId)?.short ?? "?"}
+          </span>
+      }
+    </div>
+  );
+}
+
+function SettingsScreen({ isSetup = false }: { isSetup?: boolean }) {
+  const userGameIds = usePulseStore(s => s.userGameIds);
+  const userGames = usePulseStore(s => s.userGames);
+  const setUserConfig = usePulseStore(s => s.setUserConfig);
+  const setView = usePulseStore(s => s.setView);
+
+  const [localIds, setLocalIds] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    for (const g of GAMES) {
+      const gid = userGameIds[g.id as GameTag];
+      if (gid) init[g.id] = gid.username;
+    }
+    return init;
+  });
+
+  const [selectedGame, setSelectedGame] = useState<string>(GAMES[0].id);
+  const [spinning, setSpinning] = useState(false);
+  const [synced, setSynced] = useState(false);
+
+  const selectedDef = GAMES.find(g => g.id === selectedGame) ?? GAMES[0];
+  const platform = selectedDef.platforms[0];
+
+  const hasAnyTag = GAMES.some(g => localIds[g.id]?.trim());
+  const canSave = !isSetup || hasAnyTag;
+
+  const handleSave = () => {
+    if (spinning || !canSave) return;
+    setSpinning(true);
+    setTimeout(() => {
+      setSpinning(false);
+      setSynced(true);
+      const newGames: GameTag[] = GAMES
+        .filter(g => localIds[g.id]?.trim())
+        .map(g => g.id as GameTag);
+      const newIds: Record<GameTag, GameID> = {};
+      for (const g of GAMES) {
+        const val = localIds[g.id]?.trim();
+        if (val) newIds[g.id as GameTag] = { platform: g.platforms[0].id, username: val };
+      }
+      setUserConfig(newGames.length > 0 ? newGames : userGames, newIds);
+      setTimeout(() => { setSynced(false); setView("feed"); }, 1500);
+    }, 2000);
+  };
+
+  const accent = "#00ffa3";
+
+  return (
+    <div style={{ minHeight: "100vh", background: BG_BASE, fontFamily: MONO, color: "#f9f5f8", display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+      <style>{`
+        @keyframes gear-cw { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes gear-ccw { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+      `}</style>
+      {/* Hex bg */}
+      <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(0,255,163,0.06) 1px, transparent 1px)", backgroundSize: "28px 28px", pointerEvents: "none" }} />
+
+      {/* Header */}
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 32px", borderBottom: "1px solid rgba(255,255,255,0.06)", position: "relative", zIndex: 10 }}>
+        <div>
+          <div style={{ fontFamily: DISPLAY, fontSize: 22, letterSpacing: "0.12em", color: accent, textShadow: `0 0 16px ${accent}55` }}>Macu</div>
+          <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "rgba(255,255,255,0.3)", marginTop: 2 }}>
+            {isSetup ? "CONFIGURA TUS GAME TAGS PARA COMENZAR" : "CONFIGURA TUS GAME TAGS"}
+          </div>
+        </div>
+        {!isSetup && (
+          <button onClick={() => setView("feed")} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", cursor: "pointer", fontFamily: MONO, fontSize: 11, letterSpacing: "0.12em" }}>
+            ← VOLVER
+          </button>
+        )}
+      </header>
+
+      {/* 3-column main */}
+      <main style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "32px 24px", position: "relative", zIndex: 10 }}>
+        <div style={{ display: "flex", alignItems: "stretch", justifyContent: "center", gap: 0, maxWidth: 900, width: "100%" }}>
+
+          {/* ─── Left: Game list ─── */}
+          <div style={{ flex: "0 0 280px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "4px 0 0 4px", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "rgba(255,255,255,0.3)", marginBottom: 2 }}>PASO 01</div>
+              <div style={{ fontFamily: DISPLAY, fontSize: 20, letterSpacing: "0.1em", color: accent }}>GAME</div>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto" }}>
+              {GAMES.map(game => {
+                const isActive = selectedGame === game.id;
+                const hasTag = !!localIds[game.id]?.trim();
+                return (
+                  <button key={game.id} onClick={() => setSelectedGame(game.id)} style={{
+                    width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 16px",
+                    background: isActive ? `${game.color}12` : "transparent",
+                    border: "none", borderLeft: `3px solid ${isActive ? game.color : "transparent"}`,
+                    cursor: "pointer", textAlign: "left" as const, transition: "all 0.15s",
+                    boxShadow: isActive ? `inset 0 0 20px ${game.color}08` : "none",
+                  }}>
+                    <GameLogoIcon gameId={game.id} color={game.color} size={38} active={isActive} />
+                    <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: isActive ? 700 : 400, color: isActive ? "#f9f5f8" : "rgba(255,255,255,0.4)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{game.label}</span>
+                    {hasTag && <span style={{ color: game.color, fontSize: 12, flexShrink: 0 }}>✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ─── Center: Gears + Save ─── */}
+          <div style={{ flex: "0 0 140px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, background: "rgba(0,0,0,0.2)", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "20px 0", position: "relative" }}>
+            <div style={{ position: "absolute", top: 0, bottom: 0, left: "50%", width: 1, borderLeft: "1px dashed rgba(255,255,255,0.07)", pointerEvents: "none" }} />
+            <GearSVG size={72} spin={spinning ? "cw" : "none"} color={spinning ? accent : "rgba(255,255,255,0.15)"} />
+            <GearSVG size={48} spin={spinning ? "ccw" : "none"} color={spinning ? `${accent}99` : "rgba(255,255,255,0.1)"} />
+            <GearSVG size={32} spin={spinning ? "cw" : "none"} color={spinning ? `${accent}66` : "rgba(255,255,255,0.07)"} />
+            <button
+              onClick={handleSave}
+              disabled={!canSave || spinning || synced}
+              style={{
+                marginTop: 12, padding: "8px 16px",
+                background: synced ? accent : "transparent",
+                border: `1px solid ${!canSave ? "rgba(255,255,255,0.1)" : synced ? accent : spinning ? `${accent}88` : "rgba(255,255,255,0.2)"}`,
+                borderRadius: 2, color: synced ? "#000" : canSave ? accent : "rgba(255,255,255,0.2)",
+                fontFamily: MONO, fontSize: 10, fontWeight: 700, letterSpacing: "0.16em",
+                cursor: !canSave || spinning || synced ? "default" : "pointer",
+                boxShadow: synced ? `0 0 20px ${accent}55` : spinning ? `0 0 12px ${accent}33` : "none",
+                transition: "all 0.2s",
+              }}
+            >
+              {synced ? "✓ SYNCED" : isSetup ? "ENTRAR →" : "SAVE"}
+            </button>
+            {isSetup && !hasAnyTag && (
+              <div style={{ fontSize: 8, color: "rgba(255,255,255,0.25)", letterSpacing: "0.08em", textAlign: "center", padding: "0 8px" }}>
+                CONFIGURA<br/>AL MENOS 1 TAG
+              </div>
+            )}
+          </div>
+
+          {/* ─── Right: Tag input ─── */}
+          <div style={{ flex: "0 0 280px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "0 4px 4px 0", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "rgba(255,255,255,0.3)", marginBottom: 2 }}>PASO 02</div>
+              <div style={{ fontFamily: DISPLAY, fontSize: 20, letterSpacing: "0.1em", color: accent }}>TAG</div>
+            </div>
+
+            <div style={{ flex: 1, padding: "16px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
+              {/* Selected game header with logo */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: `${selectedDef.color}0a`, border: `1px solid ${selectedDef.color}33`, borderRadius: 2 }}>
+                <GameLogoIcon gameId={selectedDef.id} color={selectedDef.color} size={44} active />
+                <div>
+                  <div style={{ fontFamily: DISPLAY, fontSize: 16, letterSpacing: "0.1em", color: selectedDef.color }}>{selectedDef.label.toUpperCase()}</div>
+                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", letterSpacing: "0.12em", marginTop: 2 }}>{platform.label.toUpperCase()}</div>
+                </div>
+              </div>
+
+              {/* Input */}
+              <input
+                key={selectedGame}
+                type="text"
+                placeholder={platform.placeholder}
+                value={localIds[selectedGame] ?? ""}
+                onChange={e => setLocalIds(prev => ({ ...prev, [selectedGame]: e.target.value }))}
+                style={{
+                  width: "100%", fontFamily: MONO, fontSize: 12, color: "#f9f5f8",
+                  background: "rgba(255,255,255,0.04)", border: `1px solid ${selectedDef.color}44`,
+                  borderRadius: 2, padding: "10px 12px", outline: "none", boxSizing: "border-box" as const,
+                  transition: "all 0.15s",
+                }}
+                onFocus={e => { e.currentTarget.style.borderColor = selectedDef.color; e.currentTarget.style.boxShadow = `0 0 8px ${selectedDef.color}33`; }}
+                onBlur={e => { e.currentTarget.style.borderColor = `${selectedDef.color}44`; e.currentTarget.style.boxShadow = "none"; }}
+              />
+
+              {/* All tags summary */}
+              <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 5 }}>
+                {GAMES.map(g => {
+                  const tag = localIds[g.id]?.trim();
+                  const isThis = g.id === selectedGame;
+                  return (
+                    <div key={g.id} onClick={() => setSelectedGame(g.id)} style={{
+                      display: "flex", alignItems: "center", gap: 8, padding: "5px 8px",
+                      background: isThis ? `${g.color}10` : "transparent",
+                      border: `1px solid ${isThis ? `${g.color}33` : "rgba(255,255,255,0.05)"}`,
+                      borderRadius: 2, cursor: "pointer", transition: "all 0.12s",
+                    }}>
+                      <GameLogoIcon gameId={g.id} color={g.color} size={22} active={isThis} />
+                      <span style={{ fontFamily: MONO, fontSize: 10, color: tag ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.2)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                        {tag ?? "—"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+      <footer style={{ textAlign: "center", padding: "12px 0", fontSize: 9, letterSpacing: "0.14em", color: "rgba(255,255,255,0.18)", position: "relative", zIndex: 10 }}>
+        Macu · TUS TAGS SE SINCRONIZAN AUTOMÁTICAMENTE
+      </footer>
+    </div>
+  );
+}
+
 // ─── Root WebApp ──────────────────────────────────────────────────────────────
 
 export function WebApp() {
@@ -893,7 +1150,7 @@ export function WebApp() {
       `}</style>
 
       {view === "setup" && <SetupScreen />}
-      {view === "settings" && <SetupScreen isSettings />}
+      {view === "settings" && <SettingsScreen />}
       {view === "feed" && <FeedScreen />}
 
       {/* Lobby room renders over everything */}
