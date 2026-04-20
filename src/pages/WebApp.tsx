@@ -959,6 +959,50 @@ function NavArrow({ dir, accent, onClick }: { dir: "left" | "right"; accent: str
   );
 }
 
+// ─── Tag validation ──────────────────────────────────────────────────────────
+
+type ValidationResult = { valid: boolean; message: string };
+
+function validateTag(platformId: string, value: string): ValidationResult {
+  const v = value.trim();
+  if (!v) return { valid: false, message: "" };
+
+  if (platformId === "riot") {
+    const parts = v.split("#");
+    if (parts.length !== 2) return { valid: false, message: "Formato: Nombre#TAG (ej: Jair#LAS)" };
+    const [name, tag] = parts;
+    if (name.length < 3 || name.length > 16) return { valid: false, message: "Nombre: 3–16 caracteres" };
+    if (!/^[a-zA-Z0-9_ ]+$/.test(name)) return { valid: false, message: "Nombre: letras, números, _ o espacios" };
+    if (tag.length < 3 || tag.length > 5) return { valid: false, message: "TAG: 3–5 caracteres (ej: LAS, EUW, NA1)" };
+    if (!/^[a-zA-Z0-9]+$/.test(tag)) return { valid: false, message: "TAG: solo letras y números" };
+    return { valid: true, message: "" };
+  }
+
+  if (platformId === "battle.net") {
+    const parts = v.split("#");
+    if (parts.length !== 2) return { valid: false, message: "Formato: Nombre#1234 (ej: Jair#1234)" };
+    const [name, tag] = parts;
+    if (name.length < 3 || name.length > 12) return { valid: false, message: "Nombre: 3–12 caracteres" };
+    if (tag.length < 4 || tag.length > 6) return { valid: false, message: "TAG: 4–6 dígitos numéricos" };
+    if (!/^\d+$/.test(tag)) return { valid: false, message: "TAG: solo números (ej: 1234)" };
+    return { valid: true, message: "" };
+  }
+
+  if (["epic", "ea", "marvel"].includes(platformId)) {
+    if (v.includes("#")) return { valid: false, message: "Este juego no usa # — solo nombre de usuario" };
+    if (v.length < 3 || v.length > 16) return { valid: false, message: "3–16 caracteres" };
+    if (!/^[a-zA-Z0-9_]+$/.test(v)) return { valid: false, message: "Solo letras, números y _" };
+    return { valid: true, message: "" };
+  }
+
+  if (platformId === "steam") {
+    if (v.length < 3) return { valid: false, message: "Muy corto (mín. 3 caracteres)" };
+    return { valid: true, message: "" };
+  }
+
+  return { valid: v.length >= 3, message: v.length < 3 ? "Muy corto" : "" };
+}
+
 // ─── Settings Screen (Game Tags) ─────────────────────────────────────────────
 
 const GEAR_PATH = "M50 15C47.2 15 45 17.2 45 20V23.1C42 24.1 39.2 25.7 36.7 27.7L34.5 25.5C32.5 23.5 29.3 23.5 27.3 25.5L25.5 27.3C23.5 29.3 23.5 32.5 25.5 34.5L27.7 36.7C25.7 39.2 24.1 42 23.1 45H20C17.2 45 15 47.2 15 50C15 52.8 17.2 55 20 55H23.1C24.1 58 25.7 60.8 27.7 63.3L25.5 65.5C23.5 67.5 23.5 70.7 25.5 72.7L27.3 74.5C29.3 76.5 32.5 76.5 34.5 74.5L36.7 72.3C39.2 74.3 42 75.9 45 76.9V80C45 82.8 47.2 85 50 85C52.8 85 55 82.8 55 80V76.9C58 75.9 60.8 74.3 63.3 72.3L65.5 74.5C67.5 76.5 70.7 76.5 72.7 74.5L74.5 72.7C76.5 70.7 76.5 67.5 74.5 65.5L72.3 63.3C74.3 60.8 75.9 58 76.9 55H80C82.8 55 85 52.8 85 50C85 47.2 82.8 45 80 45H76.9C75.9 42 74.3 39.2 72.3 36.7L74.5 34.5C76.5 32.5 76.5 29.3 74.5 27.3L72.7 25.5C70.7 23.5 67.5 23.5 65.5 25.5L63.3 27.7C60.8 25.7 58 24.1 55 23.1V20C55 17.2 52.8 15 50 15ZM50 35C58.3 35 65 41.7 65 50C65 58.3 58.3 65 50 65C41.7 65 35 58.3 35 50C35 41.7 41.7 35 50 35Z";
@@ -1017,8 +1061,18 @@ function SettingsScreen({ isSetup = false }: { isSetup?: boolean }) {
   const selectedDef = GAMES.find(g => g.id === selectedGame) ?? GAMES[0];
   const platform = selectedDef.platforms[0];
 
-  const hasAnyTag = GAMES.some(g => localIds[g.id]?.trim());
-  const canSave = !isSetup || hasAnyTag;
+  const hasAnyValidTag = GAMES.some(g => {
+    const val = localIds[g.id]?.trim();
+    if (!val) return false;
+    return validateTag(g.platforms[0].id, val).valid;
+  });
+  const canSave = !isSetup || hasAnyValidTag;
+
+  const currentValidation = validateTag(platform.id, localIds[selectedGame] ?? "");
+  const currentValue = localIds[selectedGame]?.trim() ?? "";
+  const inputBorderColor =
+    !currentValue ? `${selectedDef.color}44` :
+    currentValidation.valid ? "#00ffa3" : "#ff4d6a";
 
   const handleSave = () => {
     if (spinning || !canSave) return;
@@ -1118,7 +1172,7 @@ function SettingsScreen({ isSetup = false }: { isSetup?: boolean }) {
             >
               {synced ? "✓ SYNCED" : isSetup ? "ENTRAR →" : "SAVE"}
             </button>
-            {isSetup && !hasAnyTag && (
+            {isSetup && !hasAnyValidTag && (
               <div style={{ fontSize: 8, color: "rgba(255,255,255,0.25)", letterSpacing: "0.08em", textAlign: "center", padding: "0 8px" }}>
                 CONFIGURA<br/>AL MENOS 1 TAG
               </div>
@@ -1143,27 +1197,44 @@ function SettingsScreen({ isSetup = false }: { isSetup?: boolean }) {
               </div>
 
               {/* Input */}
-              <input
-                key={selectedGame}
-                type="text"
-                placeholder={platform.placeholder}
-                value={localIds[selectedGame] ?? ""}
-                onChange={e => setLocalIds(prev => ({ ...prev, [selectedGame]: e.target.value }))}
-                style={{
-                  width: "100%", fontFamily: MONO, fontSize: 12, color: "#f9f5f8",
-                  background: "rgba(255,255,255,0.04)", border: `1px solid ${selectedDef.color}44`,
-                  borderRadius: 2, padding: "10px 12px", outline: "none", boxSizing: "border-box" as const,
-                  transition: "all 0.15s",
-                }}
-                onFocus={e => { e.currentTarget.style.borderColor = selectedDef.color; e.currentTarget.style.boxShadow = `0 0 8px ${selectedDef.color}33`; }}
-                onBlur={e => { e.currentTarget.style.borderColor = `${selectedDef.color}44`; e.currentTarget.style.boxShadow = "none"; }}
-              />
+              <div>
+                <input
+                  key={selectedGame}
+                  type="text"
+                  placeholder={platform.placeholder}
+                  value={localIds[selectedGame] ?? ""}
+                  onChange={e => setLocalIds(prev => ({ ...prev, [selectedGame]: e.target.value }))}
+                  style={{
+                    width: "100%", fontFamily: MONO, fontSize: 12, color: "#f9f5f8",
+                    background: "rgba(255,255,255,0.04)", border: `1px solid ${inputBorderColor}`,
+                    borderRadius: 2, padding: "10px 12px", outline: "none", boxSizing: "border-box" as const,
+                    transition: "all 0.15s",
+                    boxShadow: currentValue
+                      ? currentValidation.valid
+                        ? "0 0 8px rgba(0,255,163,0.25)"
+                        : "0 0 8px rgba(255,77,106,0.25)"
+                      : "none",
+                  }}
+                />
+                {currentValue && (
+                  <div style={{
+                    marginTop: 5, fontFamily: MONO, fontSize: 9, letterSpacing: "0.08em",
+                    color: currentValidation.valid ? "#00ffa3" : "#ff4d6a",
+                    minHeight: 13,
+                  }}>
+                    {currentValidation.valid ? "✓ TAG válido" : `✗ ${currentValidation.message}`}
+                  </div>
+                )}
+              </div>
 
               {/* All tags summary */}
               <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 5 }}>
                 {GAMES.map(g => {
                   const tag = localIds[g.id]?.trim();
                   const isThis = g.id === selectedGame;
+                  const vr = tag ? validateTag(g.platforms[0].id, tag) : null;
+                  const statusColor = !tag ? "rgba(255,255,255,0.2)" : vr?.valid ? "#00ffa3" : "#ff4d6a";
+                  const statusIcon = !tag ? null : vr?.valid ? "✓" : "✗";
                   return (
                     <div key={g.id} onClick={() => setSelectedGame(g.id)} style={{
                       display: "flex", alignItems: "center", gap: 8, padding: "5px 8px",
@@ -1175,6 +1246,9 @@ function SettingsScreen({ isSetup = false }: { isSetup?: boolean }) {
                       <span style={{ fontFamily: MONO, fontSize: 10, color: tag ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.2)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
                         {tag ?? "—"}
                       </span>
+                      {statusIcon && (
+                        <span style={{ fontFamily: MONO, fontSize: 10, color: statusColor, flexShrink: 0 }}>{statusIcon}</span>
+                      )}
                     </div>
                   );
                 })}
