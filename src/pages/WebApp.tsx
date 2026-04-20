@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { usePulseStore } from "../stores/pulse-store";
+import { useAuthStore } from "../stores/auth-store";
 import { GAMES, getGame } from "../data/games";
 import { CARD_TTL_SECS, elapsedSecs } from "../lib/utils";
 import type { Card, GameMode, GameTag, GameID } from "../types";
@@ -547,7 +548,7 @@ function FeedScreen() {
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: connected ? "#00ff88" : "#ff4d6a", boxShadow: connected ? "0 0 8px #00ff88" : "none" }} />
-          <span style={{ fontFamily: DISPLAY, fontSize: 20, letterSpacing: "0.14em", color: "#f9f5f8" }}>PULSE LFG</span>
+          <span style={{ fontFamily: DISPLAY, fontSize: 20, letterSpacing: "0.14em", color: "#f9f5f8" }}>Macu</span>
         </div>
 
         {/* Carousel dots */}
@@ -559,12 +560,13 @@ function FeedScreen() {
           </div>
         )}
 
-        {/* Right: connected count + settings */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        {/* Right: connected count + auth + settings */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 2 }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: connected ? "#00ff88" : "#ff4d6a", display: "inline-block" }} />
             <span style={{ fontFamily: MONO, fontSize: 11, color: "rgba(255,255,255,0.6)", letterSpacing: "0.06em" }}>{connectedCount}</span>
           </div>
+          <AuthBadge />
           <button
             onClick={() => usePulseStore.getState().setView("settings")}
             style={{ background: "none", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 2, color: "rgba(255,255,255,0.5)", cursor: "pointer", fontFamily: MONO, fontSize: 9, letterSpacing: "0.1em", padding: "7px 12px", transition: "all 0.15s" }}
@@ -703,6 +705,242 @@ function StatPill({ label }: { label: string }) {
     <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 14px", background: "rgba(10,10,12,0.65)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 2, backdropFilter: "blur(10px)" }}>
       <span style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.55)", letterSpacing: "0.1em" }}>{label}</span>
     </div>
+  );
+}
+
+// ─── Auth components ─────────────────────────────────────────────────────────
+
+const GHOST_SVG = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C7.03 2 3 6.03 3 11v9l3-2 2 2 2-2 2 2 2-2 3 2v-9c0-4.97-4.03-9-9-9zm-3.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm7 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+  </svg>
+);
+
+const GOOGLE_SVG = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+  </svg>
+);
+
+const DISCORD_SVG = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="#5865F2" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.032.054a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+  </svg>
+);
+
+/** Ghost icon button shown in the header */
+function AuthBadge() {
+  const { ghostTag, openLogin } = useAuthStore();
+  const [hov, setHov] = useState(false);
+  const accent = "#00ffa3";
+  return (
+    <button
+      onClick={openLogin}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 7,
+        background: hov ? `${accent}12` : "rgba(0,0,0,0.3)",
+        border: `1px solid ${hov ? `${accent}55` : "rgba(255,255,255,0.1)"}`,
+        borderRadius: 2, padding: "6px 12px", cursor: "pointer",
+        color: hov ? accent : "rgba(255,255,255,0.6)",
+        fontFamily: "'JetBrains Mono', monospace", fontSize: 11,
+        letterSpacing: "0.06em", transition: "all 0.15s",
+        boxShadow: hov ? `0 0 10px ${accent}22` : "none",
+      }}
+      title="Sesión de usuario"
+    >
+      <span style={{ color: hov ? accent : "rgba(255,255,255,0.5)", display: "flex", alignItems: "center" }}>{GHOST_SVG}</span>
+      <span>{ghostTag ?? "…"}</span>
+    </button>
+  );
+}
+
+/** Full-screen dimmed overlay backdrop */
+function ModalBackdrop({ onClick }: { onClick?: () => void }) {
+  return (
+    <div onClick={onClick} style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)",
+      backdropFilter: "blur(4px)", zIndex: 200,
+    }} />
+  );
+}
+
+/** Shared OAuth + ghost buttons used in both modals */
+function AuthButtons({ showGhost, ghostTag }: { showGhost: boolean; ghostTag: string | null }) {
+  const { signInGoogle, signInDiscord, continueAsGhost, oauthMessage } = useAuthStore();
+  const MONO = "'JetBrains Mono', 'IBM Plex Mono', monospace";
+  const accent = "#00ffa3";
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Google */}
+      <button onClick={signInGoogle} style={{
+        display: "flex", alignItems: "center", gap: 12, padding: "13px 18px",
+        background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)",
+        borderRadius: 2, cursor: "pointer", fontFamily: MONO, fontSize: 12,
+        color: "rgba(255,255,255,0.85)", letterSpacing: "0.06em", transition: "all 0.15s",
+        position: "relative", overflow: "hidden",
+      }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.08)"; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.04)"; }}
+      >
+        {GOOGLE_SVG}
+        CONTINUAR CON GOOGLE
+        <span style={{ marginLeft: "auto", fontSize: 8, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em" }}>PRÓXIMAMENTE</span>
+      </button>
+      {/* Discord */}
+      <button onClick={signInDiscord} style={{
+        display: "flex", alignItems: "center", gap: 12, padding: "13px 18px",
+        background: "rgba(88,101,242,0.08)", border: "1px solid rgba(88,101,242,0.25)",
+        borderRadius: 2, cursor: "pointer", fontFamily: MONO, fontSize: 12,
+        color: "rgba(255,255,255,0.85)", letterSpacing: "0.06em", transition: "all 0.15s",
+        position: "relative", overflow: "hidden",
+      }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(88,101,242,0.15)"; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(88,101,242,0.08)"; }}
+      >
+        {DISCORD_SVG}
+        CONTINUAR CON DISCORD
+        <span style={{ marginLeft: "auto", fontSize: 8, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em" }}>PRÓXIMAMENTE</span>
+      </button>
+      {/* OAuth message */}
+      {oauthMessage && (
+        <div style={{ fontFamily: MONO, fontSize: 10, color: "#f99e1a", letterSpacing: "0.08em", textAlign: "center", padding: "4px 0" }}>
+          {oauthMessage}
+        </div>
+      )}
+      {showGhost && (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0" }}>
+            <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.07)" }} />
+            <span style={{ fontFamily: MONO, fontSize: 9, color: "rgba(255,255,255,0.25)", letterSpacing: "0.12em" }}>O CONTINÚA SIN CUENTA</span>
+            <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.07)" }} />
+          </div>
+          <button onClick={continueAsGhost} style={{
+            display: "flex", alignItems: "center", gap: 10, padding: "12px 18px",
+            background: `${accent}0a`, border: `1px solid ${accent}33`,
+            borderRadius: 2, cursor: "pointer", fontFamily: MONO, fontSize: 12,
+            color: accent, letterSpacing: "0.06em", transition: "all 0.15s",
+          }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${accent}18`; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = `${accent}0a`; }}
+          >
+            <span style={{ display: "flex", alignItems: "center" }}>{GHOST_SVG}</span>
+            {ghostTag ?? "GHOST"} — ENTRAR SIN CUENTA →
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** First-visit modal: warns about session duration, encourages login */
+function WelcomeModal() {
+  const { ghostTag, showWelcome } = useAuthStore();
+  if (!showWelcome) return null;
+  const MONO = "'JetBrains Mono', 'IBM Plex Mono', monospace";
+  const DISPLAY = "Impact, 'Bebas Neue', sans-serif";
+  const accent = "#00ffa3";
+  return (
+    <>
+      <ModalBackdrop />
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 201,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 24,
+      }}>
+        <div style={{
+          width: "100%", maxWidth: 420,
+          background: "#0d0d10", border: `1px solid ${accent}33`,
+          borderRadius: 4, overflow: "hidden",
+          boxShadow: `0 0 60px ${accent}18, 0 24px 64px rgba(0,0,0,0.6)`,
+        }}>
+          {/* Top accent strip */}
+          <div style={{ height: 3, background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }} />
+          <div style={{ padding: "28px 28px 24px" }}>
+            {/* Logo */}
+            <div style={{ fontFamily: DISPLAY, fontSize: 26, letterSpacing: "0.14em", color: accent, textShadow: `0 0 20px ${accent}55`, marginBottom: 4 }}>
+              MACU
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: "rgba(255,255,255,0.3)", letterSpacing: "0.18em", marginBottom: 24 }}>
+              PLATAFORMA LFG
+            </div>
+            {/* Session warning */}
+            <div style={{ background: "rgba(249,158,26,0.08)", border: "1px solid rgba(249,158,26,0.2)", borderRadius: 2, padding: "12px 14px", marginBottom: 24 }}>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: "#f99e1a", fontWeight: 700, letterSpacing: "0.1em", marginBottom: 6 }}>
+                ⚠ SESIÓN TEMPORAL
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
+                Tu sesión y tus game tags se guardan en este navegador. <strong style={{ color: "rgba(255,255,255,0.8)" }}>Durarán hasta que borres los datos del navegador.</strong>
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.45)", marginTop: 8, lineHeight: 1.5 }}>
+                Inicia sesión con Google o Discord para guardar tu progreso para siempre en cualquier dispositivo.
+              </div>
+            </div>
+            {/* Buttons */}
+            <AuthButtons showGhost ghostTag={ghostTag} />
+          </div>
+          <div style={{ height: 3, background: `linear-gradient(90deg, transparent, ${accent}44, transparent)` }} />
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** Login modal: opened from header ghost icon */
+function LoginModal() {
+  const { ghostTag, showLogin, closeLogin } = useAuthStore();
+  if (!showLogin) return null;
+  const MONO = "'JetBrains Mono', 'IBM Plex Mono', monospace";
+  const DISPLAY = "Impact, 'Bebas Neue', sans-serif";
+  const accent = "#00ffa3";
+  return (
+    <>
+      <ModalBackdrop onClick={closeLogin} />
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 201,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 24, pointerEvents: "none",
+      }}>
+        <div style={{
+          width: "100%", maxWidth: 400, pointerEvents: "auto",
+          background: "#0d0d10", border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: 4, overflow: "hidden",
+          boxShadow: "0 0 40px rgba(0,0,0,0.7)",
+        }}>
+          <div style={{ height: 2, background: `linear-gradient(90deg, transparent, ${accent}66, transparent)` }} />
+          <div style={{ padding: "24px 24px 20px" }}>
+            {/* Header row */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <div>
+                <div style={{ fontFamily: DISPLAY, fontSize: 20, letterSpacing: "0.12em", color: "#f9f5f8" }}>INICIAR SESIÓN</div>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: "rgba(255,255,255,0.3)", letterSpacing: "0.14em", marginTop: 3 }}>
+                  SESIÓN ACTUAL: <span style={{ color: accent }}>{ghostTag}</span>
+                </div>
+              </div>
+              <button onClick={closeLogin} style={{
+                background: "none", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 2,
+                color: "rgba(255,255,255,0.4)", cursor: "pointer", width: 32, height: 32,
+                fontFamily: MONO, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "all 0.15s",
+              }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.3)"; (e.currentTarget as HTMLButtonElement).style.color = "#f9f5f8"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.1)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.4)"; }}
+              >✕</button>
+            </div>
+            {/* Benefits callout */}
+            <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.4)", lineHeight: 1.7, marginBottom: 18, padding: "10px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 2, border: "1px solid rgba(255,255,255,0.06)" }}>
+              Con cuenta: progreso permanente · cualquier dispositivo · historial de lobbies
+            </div>
+            <AuthButtons showGhost={false} ghostTag={ghostTag} />
+          </div>
+          <div style={{ height: 2, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)" }} />
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -960,6 +1198,11 @@ export function WebApp() {
   useWebSocket();
   const view = usePulseStore(s => s.view);
   const handshake = usePulseStore(s => s.handshake);
+  const { showWelcome, showLogin } = useAuthStore();
+
+  useEffect(() => {
+    useAuthStore.getState().init();
+  }, []);
 
   return (
     <div style={{ minHeight: "100vh", background: BG_BASE, fontFamily: MONO, color: "#f9f5f8" }}>
@@ -977,6 +1220,10 @@ export function WebApp() {
 
       {/* Lobby room renders over everything */}
       {handshake && <LobbyRoomOverlay />}
+
+      {/* Auth modals render on top of everything */}
+      {showWelcome && <WelcomeModal />}
+      {showLogin && <LoginModal />}
     </div>
   );
 }

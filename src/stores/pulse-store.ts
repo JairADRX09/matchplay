@@ -86,20 +86,37 @@ function buildFilters(
   }));
 }
 
+// ── localStorage persistence for game config ──────────────────────────
+const K_GAMES = "macu_user_games";
+const K_IDS   = "macu_game_ids";
+
+function loadPersistedGames(): { userGames: GameTag[]; userGameIds: Record<GameTag, GameID> } {
+  try {
+    const g = localStorage.getItem(K_GAMES);
+    const i = localStorage.getItem(K_IDS);
+    if (g && i) {
+      return { userGames: JSON.parse(g) as GameTag[], userGameIds: JSON.parse(i) as Record<GameTag, GameID> };
+    }
+  } catch { /* ignore */ }
+  return { userGames: [], userGameIds: {} };
+}
+
+const _persisted = loadPersistedGames();
+
 export const usePulseStore = create<PulseState>((set, get) => ({
   cards: [],
   myCardId: null,
   pendingPublish: null,
   publishError: null,
-  selectedGames: [],
+  selectedGames: _persisted.userGames,
   modeFilter: "All",
   minRankOrdinal: null,
   handshake: null,
   connected: false,
   connectedCount: 0,
-  view: "setup",
-  userGames: [],
-  userGameIds: {},
+  view: _persisted.userGames.length > 0 ? "feed" : "setup",
+  userGames: _persisted.userGames,
+  userGameIds: _persisted.userGameIds,
 
   addCard: (card) => {
     set((s) => {
@@ -190,6 +207,11 @@ export const usePulseStore = create<PulseState>((set, get) => ({
   setMinRank: (ordinal) => set({ minRankOrdinal: ordinal }),
 
   setUserConfig: (games, gameIds) => {
+    // Persist to localStorage so the session survives page reloads
+    try {
+      localStorage.setItem(K_GAMES, JSON.stringify(games));
+      localStorage.setItem(K_IDS,   JSON.stringify(gameIds));
+    } catch { /* quota */ }
     set({
       userGames: games,
       userGameIds: gameIds,

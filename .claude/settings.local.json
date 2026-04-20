@@ -55,7 +55,8 @@
       "Bash(curl -s \"https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sX2VkZmE0ZjliZGEyZTQzOGM4YzFhYzU2NDlhZWQwZDA3EgsSBxC3qqLrrhsYAZIBIwoKcHJvamVjdF9pZBIVQhMxMjM0Nzk1NjczNjgyMjcxODUw&filename=&opi=89354086\")",
       "Bash(rustc --version)",
       "Bash(cargo --version)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "mcp__obsidian__read_multiple_notes"
     ]
   }
 }
