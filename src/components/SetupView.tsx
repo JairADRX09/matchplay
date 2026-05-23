@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { usePulseStore } from "../stores/pulse-store";
+import { useAuthStore } from "../stores/auth-store";
 import { T } from "../styles/tokens";
 import { GAMES } from "../data/games";
 import type { GameTag, GameID } from "../types";
 
 export function SetupView() {
   const setUserConfig = usePulseStore((s) => s.setUserConfig);
+  const supabaseUser  = useAuthStore((s) => s.supabaseUser);
 
   const [step, setStep] = useState(0);
   const [selectedGames, setSelectedGames] = useState<GameTag[]>([]);
@@ -35,7 +37,7 @@ export function SetupView() {
     });
   });
 
-  const handleDone = () => {
+  const handleDone = async () => {
     const userGameIds: Record<GameTag, GameID> = {};
     for (const g of selectedGames) {
       const def = GAMES.find((d) => d.id === g);
@@ -45,7 +47,7 @@ export function SetupView() {
       const username = gameIds[g]?.[firstPlatform.id]?.trim() ?? "";
       userGameIds[g] = { platform: firstPlatform.id, username };
     }
-    setUserConfig(selectedGames, userGameIds);
+    await setUserConfig(selectedGames, userGameIds, supabaseUser?.id);
   };
 
   return (

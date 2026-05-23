@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { usePulseStore } from "../stores/pulse-store";
+import { useAuthStore } from "../stores/auth-store";
 import { T } from "../styles/tokens";
 import { GAMES } from "../data/games";
 import type { GameTag, GameID } from "../types";
 
 export function SettingsView() {
-  const userGames = usePulseStore((s) => s.userGames);
-  const userGameIds = usePulseStore((s) => s.userGameIds);
+  const userGames     = usePulseStore((s) => s.userGames);
+  const userGameIds   = usePulseStore((s) => s.userGameIds);
   const setUserConfig = usePulseStore((s) => s.setUserConfig);
-  const setView = usePulseStore((s) => s.setView);
+  const setView       = usePulseStore((s) => s.setView);
+  const supabaseUser  = useAuthStore((s) => s.supabaseUser);
 
   const [selectedGames, setSelectedGames] = useState<GameTag[]>(userGames);
   const [gameIds, setGameIds] = useState<Record<GameTag, Record<string, string>>>(() => {
@@ -47,7 +49,7 @@ export function SettingsView() {
     });
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const newGameIds: Record<GameTag, GameID> = {};
     for (const g of selectedGames) {
       const def = GAMES.find((d) => d.id === g);
@@ -57,7 +59,7 @@ export function SettingsView() {
       const username = gameIds[g]?.[firstPlatform.id]?.trim() ?? "";
       newGameIds[g] = { platform: firstPlatform.id, username };
     }
-    setUserConfig(selectedGames, newGameIds);
+    await setUserConfig(selectedGames, newGameIds, supabaseUser?.id);
     setSaved(true);
     setTimeout(() => setView("feed"), 600);
   };

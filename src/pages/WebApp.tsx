@@ -731,30 +731,51 @@ const DISCORD_SVG = (
   </svg>
 );
 
-/** Ghost icon button shown in the header */
+/**
+ * Header badge — Gengar (#94) as the ghost/account icon.
+ * Ghost mode  → dimmed sprite, click opens login modal.
+ * Authenticated → glowing sprite, click opens account modal (sign-out).
+ */
 function AuthBadge() {
-  const { ghostTag, openLogin } = useAuthStore();
+  const { isAuthenticated, openLogin } = useAuthStore();
   const [hov, setHov] = useState(false);
   const accent = "#00ffa3";
+  // Gengar (#94) — the iconic ghost Pokémon.
+  const spriteUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/94.png";
+
   return (
     <button
       onClick={openLogin}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
+      title={isAuthenticated ? "Cuenta activa — click para cerrar sesión" : "Iniciar sesión"}
       style={{
-        display: "flex", alignItems: "center", gap: 7,
-        background: hov ? `${accent}12` : "rgba(0,0,0,0.3)",
-        border: `1px solid ${hov ? `${accent}55` : "rgba(255,255,255,0.1)"}`,
-        borderRadius: 2, padding: "6px 12px", cursor: "pointer",
-        color: hov ? accent : "rgba(255,255,255,0.6)",
-        fontFamily: "'JetBrains Mono', monospace", fontSize: 11,
-        letterSpacing: "0.06em", transition: "all 0.15s",
-        boxShadow: hov ? `0 0 10px ${accent}22` : "none",
+        display: "flex", alignItems: "center",
+        background: isAuthenticated
+          ? hov ? "rgba(255,77,106,0.12)" : `${accent}0a`
+          : hov ? `${accent}12` : "rgba(0,0,0,0.3)",
+        border: `1px solid ${
+          isAuthenticated
+            ? hov ? "#ff4d6a" : `${accent}55`
+            : hov ? `${accent}55` : "rgba(255,255,255,0.1)"
+        }`,
+        borderRadius: 2, padding: "4px 8px", cursor: "pointer",
+        transition: "all 0.15s",
+        boxShadow: isAuthenticated ? `0 0 10px ${accent}33` : "none",
       }}
-      title="Sesión de usuario"
     >
-      <span style={{ color: hov ? accent : "rgba(255,255,255,0.5)", display: "flex", alignItems: "center" }}>{GHOST_SVG}</span>
-      <span>{ghostTag ?? "…"}</span>
+      <img
+        src={spriteUrl}
+        width={30} height={30}
+        alt="avatar"
+        style={{
+          imageRendering: "pixelated",
+          filter: isAuthenticated
+            ? `drop-shadow(0 0 5px ${accent}bb)`
+            : "grayscale(70%) brightness(0.6)",
+          transition: "filter 0.2s",
+        }}
+      />
     </button>
   );
 }
@@ -769,7 +790,7 @@ function ModalBackdrop({ onClick }: { onClick?: () => void }) {
   );
 }
 
-/** Shared OAuth + ghost buttons used in both modals */
+/** OAuth buttons (Google + Discord) + optional ghost fallback. */
 function AuthButtons({ showGhost, ghostTag }: { showGhost: boolean; ghostTag: string | null }) {
   const { signInGoogle, signInDiscord, continueAsGhost, oauthMessage } = useAuthStore();
   const MONO = "'JetBrains Mono', 'IBM Plex Mono', monospace";
@@ -782,36 +803,36 @@ function AuthButtons({ showGhost, ghostTag }: { showGhost: boolean; ghostTag: st
         background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)",
         borderRadius: 2, cursor: "pointer", fontFamily: MONO, fontSize: 12,
         color: "rgba(255,255,255,0.85)", letterSpacing: "0.06em", transition: "all 0.15s",
-        position: "relative", overflow: "hidden",
       }}
         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.08)"; }}
         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.04)"; }}
       >
         {GOOGLE_SVG}
         CONTINUAR CON GOOGLE
-        <span style={{ marginLeft: "auto", fontSize: 8, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em" }}>PRÓXIMAMENTE</span>
       </button>
+
       {/* Discord */}
       <button onClick={signInDiscord} style={{
         display: "flex", alignItems: "center", gap: 12, padding: "13px 18px",
         background: "rgba(88,101,242,0.08)", border: "1px solid rgba(88,101,242,0.25)",
         borderRadius: 2, cursor: "pointer", fontFamily: MONO, fontSize: 12,
         color: "rgba(255,255,255,0.85)", letterSpacing: "0.06em", transition: "all 0.15s",
-        position: "relative", overflow: "hidden",
       }}
         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(88,101,242,0.15)"; }}
         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(88,101,242,0.08)"; }}
       >
         {DISCORD_SVG}
         CONTINUAR CON DISCORD
-        <span style={{ marginLeft: "auto", fontSize: 8, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em" }}>PRÓXIMAMENTE</span>
       </button>
-      {/* OAuth message */}
+
+      {/* Error / status message */}
       {oauthMessage && (
-        <div style={{ fontFamily: MONO, fontSize: 10, color: "#f99e1a", letterSpacing: "0.08em", textAlign: "center", padding: "4px 0" }}>
+        <div style={{ fontFamily: MONO, fontSize: 10, color: "#ff4d6a", letterSpacing: "0.08em", textAlign: "center", padding: "4px 0" }}>
           {oauthMessage}
         </div>
       )}
+
+      {/* Ghost fallback */}
       {showGhost && (
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0" }}>
@@ -890,13 +911,29 @@ function WelcomeModal() {
   );
 }
 
-/** Login modal: opened from header ghost icon */
+/** Login / Account modal — opened from the header badge. */
 function LoginModal() {
-  const { ghostTag, showLogin, closeLogin } = useAuthStore();
+  const { ghostTag, showLogin, closeLogin, isAuthenticated, supabaseUser, signOut } = useAuthStore();
   if (!showLogin) return null;
   const MONO = "'JetBrains Mono', 'IBM Plex Mono', monospace";
   const DISPLAY = "Impact, 'Bebas Neue', sans-serif";
   const accent = "#00ffa3";
+
+  const provider = supabaseUser?.app_metadata?.provider as string | undefined;
+  const providerLabel = provider === "google" ? "Google" : provider === "discord" ? "Discord" : provider ?? "";
+
+  const CloseBtn = () => (
+    <button onClick={closeLogin} style={{
+      background: "none", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 2,
+      color: "rgba(255,255,255,0.4)", cursor: "pointer", width: 32, height: 32,
+      fontFamily: MONO, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center",
+      transition: "all 0.15s",
+    }}
+      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.3)"; (e.currentTarget as HTMLButtonElement).style.color = "#f9f5f8"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.1)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.4)"; }}
+    >✕</button>
+  );
+
   return (
     <>
       <ModalBackdrop onClick={closeLogin} />
@@ -907,35 +944,73 @@ function LoginModal() {
       }}>
         <div style={{
           width: "100%", maxWidth: 400, pointerEvents: "auto",
-          background: "#0d0d10", border: "1px solid rgba(255,255,255,0.1)",
+          background: "#0d0d10", border: `1px solid ${isAuthenticated ? `${accent}33` : "rgba(255,255,255,0.1)"}`,
           borderRadius: 4, overflow: "hidden",
-          boxShadow: "0 0 40px rgba(0,0,0,0.7)",
+          boxShadow: isAuthenticated ? `0 0 40px ${accent}18, 0 16px 40px rgba(0,0,0,0.7)` : "0 0 40px rgba(0,0,0,0.7)",
         }}>
-          <div style={{ height: 2, background: `linear-gradient(90deg, transparent, ${accent}66, transparent)` }} />
+          <div style={{ height: 2, background: `linear-gradient(90deg, transparent, ${isAuthenticated ? accent : `${accent}66`}, transparent)` }} />
           <div style={{ padding: "24px 24px 20px" }}>
-            {/* Header row */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-              <div>
-                <div style={{ fontFamily: DISPLAY, fontSize: 20, letterSpacing: "0.12em", color: "#f9f5f8" }}>INICIAR SESIÓN</div>
-                <div style={{ fontFamily: MONO, fontSize: 9, color: "rgba(255,255,255,0.3)", letterSpacing: "0.14em", marginTop: 3 }}>
-                  SESIÓN ACTUAL: <span style={{ color: accent }}>{ghostTag}</span>
+
+            {isAuthenticated ? (
+              /* ── Authenticated view ─────────────────────────────── */
+              <>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <img
+                      src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/94.png"
+                      width={40} height={40} alt="Gengar"
+                      style={{ imageRendering: "pixelated", filter: `drop-shadow(0 0 6px ${accent}bb)` }}
+                    />
+                    <div>
+                      <div style={{ fontFamily: DISPLAY, fontSize: 18, letterSpacing: "0.1em", color: accent }}>
+                        SESIÓN ACTIVA
+                      </div>
+                      {providerLabel && (
+                        <div style={{ fontFamily: MONO, fontSize: 9, color: "rgba(255,255,255,0.35)", letterSpacing: "0.14em", marginTop: 2 }}>
+                          CONECTADO CON {providerLabel.toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <CloseBtn />
                 </div>
-              </div>
-              <button onClick={closeLogin} style={{
-                background: "none", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 2,
-                color: "rgba(255,255,255,0.4)", cursor: "pointer", width: 32, height: 32,
-                fontFamily: MONO, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center",
-                transition: "all 0.15s",
-              }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.3)"; (e.currentTarget as HTMLButtonElement).style.color = "#f9f5f8"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.1)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.4)"; }}
-              >✕</button>
-            </div>
-            {/* Benefits callout */}
-            <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.4)", lineHeight: 1.7, marginBottom: 18, padding: "10px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 2, border: "1px solid rgba(255,255,255,0.06)" }}>
-              Con cuenta: progreso permanente · cualquier dispositivo · historial de lobbies
-            </div>
-            <AuthButtons showGhost={false} ghostTag={ghostTag} />
+
+                <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.4)", lineHeight: 1.7, marginBottom: 20, padding: "10px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 2, border: "1px solid rgba(255,255,255,0.06)" }}>
+                  Tus game tags y progreso se guardan permanentemente en tu cuenta.
+                </div>
+
+                <button
+                  onClick={async () => { await signOut(); closeLogin(); }}
+                  style={{
+                    width: "100%", padding: "12px", background: "rgba(255,77,106,0.08)",
+                    border: "1px solid rgba(255,77,106,0.3)", borderRadius: 2, cursor: "pointer",
+                    fontFamily: MONO, fontSize: 12, color: "#ff4d6a", letterSpacing: "0.1em",
+                    transition: "all 0.15s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,77,106,0.18)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,77,106,0.08)"; }}
+                >
+                  CERRAR SESIÓN
+                </button>
+              </>
+            ) : (
+              /* ── Ghost / login view ─────────────────────────────── */
+              <>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                  <div>
+                    <div style={{ fontFamily: DISPLAY, fontSize: 20, letterSpacing: "0.12em", color: "#f9f5f8" }}>INICIAR SESIÓN</div>
+                    <div style={{ fontFamily: MONO, fontSize: 9, color: "rgba(255,255,255,0.3)", letterSpacing: "0.14em", marginTop: 3 }}>
+                      SESIÓN ACTUAL: <span style={{ color: accent }}>{ghostTag}</span>
+                    </div>
+                  </div>
+                  <CloseBtn />
+                </div>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.4)", lineHeight: 1.7, marginBottom: 18, padding: "10px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 2, border: "1px solid rgba(255,255,255,0.06)" }}>
+                  Con cuenta: progreso permanente · cualquier dispositivo · tus game tags siempre disponibles
+                </div>
+                <AuthButtons showGhost={false} ghostTag={ghostTag} />
+              </>
+            )}
           </div>
           <div style={{ height: 2, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)" }} />
         </div>
@@ -1044,6 +1119,7 @@ function SettingsScreen({ isSetup = false }: { isSetup?: boolean }) {
   const userGames = usePulseStore(s => s.userGames);
   const setUserConfig = usePulseStore(s => s.setUserConfig);
   const setView = usePulseStore(s => s.setView);
+  const supabaseUser = useAuthStore(s => s.supabaseUser);
 
   const [localIds, setLocalIds] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
@@ -1074,23 +1150,21 @@ function SettingsScreen({ isSetup = false }: { isSetup?: boolean }) {
     !currentValue ? `${selectedDef.color}44` :
     currentValidation.valid ? "#00ffa3" : "#ff4d6a";
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (spinning || !canSave) return;
     setSpinning(true);
-    setTimeout(() => {
-      setSpinning(false);
-      setSynced(true);
-      const newGames: GameTag[] = GAMES
-        .filter(g => localIds[g.id]?.trim())
-        .map(g => g.id as GameTag);
-      const newIds: Record<GameTag, GameID> = {};
-      for (const g of GAMES) {
-        const val = localIds[g.id]?.trim();
-        if (val) newIds[g.id as GameTag] = { platform: g.platforms[0].id, username: val };
-      }
-      setUserConfig(newGames.length > 0 ? newGames : userGames, newIds);
-      setTimeout(() => { setSynced(false); setView("feed"); }, 1500);
-    }, 2000);
+    const newGames: GameTag[] = GAMES
+      .filter(g => localIds[g.id]?.trim())
+      .map(g => g.id as GameTag);
+    const newIds: Record<GameTag, GameID> = {};
+    for (const g of GAMES) {
+      const val = localIds[g.id]?.trim();
+      if (val) newIds[g.id as GameTag] = { platform: g.platforms[0].id, username: val };
+    }
+    await setUserConfig(newGames.length > 0 ? newGames : userGames, newIds, supabaseUser?.id);
+    setSpinning(false);
+    setSynced(true);
+    setTimeout(() => { setSynced(false); setView("feed"); }, 1500);
   };
 
   const accent = "#00ffa3";

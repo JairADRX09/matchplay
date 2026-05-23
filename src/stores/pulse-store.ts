@@ -9,6 +9,7 @@ import type {
   SubscriptionFilter,
 } from "../types";
 import { wsSend } from "../lib/ws";
+import { supabase } from "../lib/supabase";
 
 export type AppView = "setup" | "feed" | "settings";
 
@@ -53,6 +54,8 @@ interface PulseState {
   userGameIds: Record<GameTag, GameID>; // gameTag → user's GameID
 
   // Actions
+  loadUserConfig: (userId: string) => Promise<void>;
+  clearUserConfig: () => void;
   addCard: (card: Card) => void;
   removeCard: (cardId: CardId) => void;
   updateCard: (card: Card) => void;
@@ -66,7 +69,7 @@ interface PulseState {
   toggleGameFilter: (game: GameTag) => void;
   setModeFilter: (mode: "All" | GameMode) => void;
   setMinRank: (ordinal: number | null) => void;
-  setUserConfig: (games: GameTag[], gameIds: Record<GameTag, GameID>) => void;
+  setUserConfig: (games: GameTag[], gameIds: Record<GameTag, GameID>, userId?: string) => Promise<void>;
   publishCard: (game: GameTag, mode: GameMode, rank: RankTier, maxSlots?: number) => void;
   joinCard: (cardId: CardId, gameTag: GameTag) => void;
   leaveCard: (cardId: CardId) => void;
@@ -206,17 +209,113 @@ export const usePulseStore = create<PulseState>((set, get) => ({
 
   setMinRank: (ordinal) => set({ minRankOrdinal: ordinal }),
 
-  setUserConfig: (games, gameIds) => {
-    // Persist to localStorage so the session survives page reloads
+  loadUserConfig: async (userId) => {
+    const { data, error } = await supabase
+      .from("user_profiles")
+      .select("user_games, user_game_ids")
+      .eq("user_id", userId)
+      .maybeSingle();             // maybeSingle → null if not found, no error
+
+    if (error) {
+      console.error("[pulse] loadUserConfig error:", error.message);
+      return;
+    }
+
+    if (data) {
+      // ── Supabase profile exists → use it y actualiza caché local ─
+      const games   = data.user_games   as GameTag[];
+      const gameIds = data.user_game_ids as Record<GameTag, GameID>;
+      // Refresca localStorage para que el próximo reload cargue al instante
+      try {
+        localStorage.setItem(K_GAMES, JSON.stringify(games));
+        localStorage.setItem(K_IDS,   JSON.stringify(gameIds));
+      } catch { /* quota */ }
+      set({
+        userGames:     games,
+        userGameIds:   gameIds,
+        selectedGames: games,
+        view: games.length > 0 ? "feed" : "setup",
+      });
+      const { modeFilter } = get();
+      if (games.length > 0) {
+        wsSend({ type: "Subscribe", filters: buildFilters(games, modeFilter) });
+      }
+    } else {
+      // ── No Supabase profile yet ──────────────────────────────────
+      // If the user had configured games as ghost (localStorage), migrate them now.
+      const { userGames, userGameIds } = get();
+      if (userGames.length > 0) {
+        const { error: saveErr } = await supabase
+          .from("user_profiles")
+          .upsert(
+            {
+              user_id:       userId,
+              user_games:    userGames,
+              user_game_ids: userGameIds,
+              updated_at:    new Date().toISOString(),
+            },
+            { onConflict: "user_id" }
+          );
+        if (saveErr) {
+          console.error("[pulse] profile migration error:", saveErr.message);
+        } else {
+          console.info("[pulse] ghost profile migrated to Supabase");
+        }
+      }
+      // If no localStorage data either, view stays "setup" from store init
+    }
+  },
+
+  clearUserConfig: () => {
+    // Limpia localStorage de juegos (los datos ghost se mantienen separados)
+    try {
+      localStorage.removeItem(K_GAMES);
+      localStorage.removeItem(K_IDS);
+    } catch { /* ignore */ }
+    set({
+      userGames:     [],
+      userGameIds:   {},
+      selectedGames: [],
+      view:          "setup",
+      cards:         [],
+      myCardId:      null,
+      handshake:     null,
+    });
+  },
+
+  setUserConfig: async (games, gameIds, userId) => {
+    // Siempre cachea en localStorage → carga instantánea al reabrir la página
     try {
       localStorage.setItem(K_GAMES, JSON.stringify(games));
       localStorage.setItem(K_IDS,   JSON.stringify(gameIds));
     } catch { /* quota */ }
+
+    if (userId) {
+      // Además guarda en Supabase como fuente de verdad entre dispositivos
+      const { error } = await supabase
+        .from("user_profiles")
+        .upsert(
+          {
+            user_id:       userId,
+            user_games:    games,
+            user_game_ids: gameIds,
+            updated_at:    new Date().toISOString(),
+          },
+          { onConflict: "user_id" }
+        );
+      if (error) {
+        console.error("[pulse] setUserConfig upsert error:", error.message, error.details);
+        // No bloqueamos la UI aunque falle Supabase — localStorage ya tiene los datos
+      } else {
+        console.info("[pulse] profile saved to Supabase");
+      }
+    }
+
     set({
-      userGames: games,
-      userGameIds: gameIds,
+      userGames:     games,
+      userGameIds:   gameIds,
       selectedGames: games,
-      view: "feed",
+      view:          "feed",
     });
     const { modeFilter } = get();
     wsSend({ type: "Subscribe", filters: buildFilters(games, modeFilter) });
