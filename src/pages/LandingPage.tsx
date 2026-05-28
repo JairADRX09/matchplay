@@ -5,14 +5,46 @@
  */
 import { useState } from "react";
 
-import valorantBg   from "../images/valoranthd.jpg";
-import fortniteBg   from "../images/fortnitehd.jpg";
-import lolBg        from "../images/lolhd.jpg";
-import cs2Bg        from "../images/cs2hd.jpg";
-import apexBg       from "../images/apexhd.jpg";
-import overwatchBg  from "../images/overwatchhd.jpg";
-import rocketBg     from "../images/rocketlhd.jpg";
-import marvelBg     from "../images/marvelrhd.jpg";
+// Apex Legends
+import apex1 from "../images/paralelograms/apex_legends/4532e619692eb472a007178cf803f885_nobg.webp";
+import apex2 from "../images/paralelograms/apex_legends/4c64088ddbf2e6b337c52ad3906154a5_nobg.webp";
+import apex3 from "../images/paralelograms/apex_legends/5532a2b09cd08394d549bbd28f55e77b_nobg.webp";
+import apex4 from "../images/paralelograms/apex_legends/7984580e7326ea6570d63fdf49779bae_nobg.webp";
+import apex5 from "../images/paralelograms/apex_legends/c77685cb5a9934153bf6cd84ac3b9f8f_nobg.webp";
+// Fortnite
+import fn1 from "../images/paralelograms/fortnite/0206fa0b2cc6bf682e7e950ad063ec39_nobg.webp";
+import fn2 from "../images/paralelograms/fortnite/5c4d601d248a9c9b7b72d8e2baca4386_nobg.webp";
+import fn3 from "../images/paralelograms/fortnite/d367bb528441ebf53e923777e29e5634_nobg.webp";
+import fn4 from "../images/paralelograms/fortnite/efd1c49a88d23c5398a247d2c7fbb5bc_nobg.webp";
+// League of Legends
+import lol1 from "../images/paralelograms/league_of_legends/280cd44c99a14a4a305bb0f99eba503a_nobg.webp";
+import lol2 from "../images/paralelograms/league_of_legends/2eb10b3a117e9395aafdf74d514f0472_nobg.webp";
+import lol3 from "../images/paralelograms/league_of_legends/857faa8f8edeb2010f689ca61a6b946b_nobg.webp";
+import lol4 from "../images/paralelograms/league_of_legends/a02814e85f888f3322f4ab315e4afb45_nobg.webp";
+import lol5 from "../images/paralelograms/league_of_legends/a74d165c58bfa91c925ba626fc7d1f09_nobg.webp";
+// Marvel Rivals
+import mr1 from "../images/paralelograms/marvel_rivals/06f4a4adc3222656e2df8dbd2a07723d_nobg.webp";
+import mr2 from "../images/paralelograms/marvel_rivals/57532045644926fa7b501a8f949e6542_nobg.webp";
+import mr3 from "../images/paralelograms/marvel_rivals/b24dbe230dd9181e6d8657ac58dedc75_nobg.webp";
+import mr4 from "../images/paralelograms/marvel_rivals/f51f85dcf3cb74311151dba3e2403628_nobg.webp";
+import mr5 from "../images/paralelograms/marvel_rivals/f694a5a8ad6782a1a5392a814d566729_nobg.webp";
+// Overwatch
+import ow1 from "../images/paralelograms/overwatch/0dcfb72b2160c02522b55e715ba57353_nobg.webp";
+import ow2 from "../images/paralelograms/overwatch/72556b44292821366d451d05a0672a92_nobg.webp";
+import ow3 from "../images/paralelograms/overwatch/7e200d74029cc34dd5e1b8d38bfa4c26_nobg.webp";
+import ow4 from "../images/paralelograms/overwatch/a1755afbeac8b59615e0aaede36f1343_nobg.webp";
+import ow5 from "../images/paralelograms/overwatch/c8dc688537f791a91a7dda6dea826cc9_nobg.webp";
+// Rocket League
+import rl1 from "../images/paralelograms/rocket_league/71a51ce78160d0692dcdfdb7d739177d_nobg.webp";
+import rl2 from "../images/paralelograms/rocket_league/988f9d16b1971937f1214deb02ae3feb_nobg.webp";
+import rl3 from "../images/paralelograms/rocket_league/b9f0a4214ca35b4d510a3c65d5a9cd27_nobg.webp";
+import rl4 from "../images/paralelograms/rocket_league/c2d36ceac43ea7ac74ae281ca565f65a_nobg.webp";
+// Valorant
+import val1 from "../images/paralelograms/valorant/2cb99eeaa1a8fa6e1acbf75805885686_nobg.webp";
+import val2 from "../images/paralelograms/valorant/75b528265d4acab1c7d3223489879cea_nobg.webp";
+import val3 from "../images/paralelograms/valorant/88b8b1595b64e62ea49a0597a6df5da2_nobg.webp";
+import val4 from "../images/paralelograms/valorant/bc453278cb228a97749f0f1c32809d45_nobg.webp";
+import val5 from "../images/paralelograms/valorant/f55b17e7db2dfabc74880588796407b9_nobg.webp";
 
 const DOWNLOAD_URL =
   "https://github.com/pulse-lfg/pulse-lfg/releases/latest/download/Pulse-LFG_x64-setup.exe";
@@ -23,22 +55,30 @@ const MONO   = "'JetBrains Mono', monospace";
 const DISPLAY = "'Anybody', Impact, sans-serif";
 
 // ── Column image pools (shuffled so each column looks unique) ─────────────────
-const ALL = [valorantBg, cs2Bg, apexBg, lolBg, overwatchBg, fortniteBg, marvelBg, rocketBg];
+const ALL = [
+  apex1, apex2, apex3, apex4, apex5,
+  fn1, fn2, fn3, fn4,
+  lol1, lol2, lol3, lol4, lol5,
+  mr1, mr2, mr3, mr4, mr5,
+  ow1, ow2, ow3, ow4, ow5,
+  rl1, rl2, rl3, rl4,
+  val1, val2, val3, val4, val5,
+];
 
 function makePool(offset: number): string[] {
   const rotated = [...ALL.slice(offset), ...ALL.slice(0, offset)];
-  // Duplicate so we have enough for the seamless 200% loop
-  return [...rotated, ...rotated, ...rotated];
+  // Exactly 2 copies so -50% lands at the start of copy 2 — seamless loop
+  return [...rotated, ...rotated];
 }
 
 const COLUMNS: Array<{ images: string[]; dir: "up" | "down"; duration: number }> = [
-  { images: makePool(0), dir: "up",   duration: 28 },
-  { images: makePool(3), dir: "down", duration: 32 },
-  { images: makePool(1), dir: "up",   duration: 25 },
-  { images: makePool(5), dir: "down", duration: 30 },
-  { images: makePool(2), dir: "up",   duration: 27 },
-  { images: makePool(6), dir: "down", duration: 33 },
-  { images: makePool(4), dir: "up",   duration: 26 },
+  { images: makePool(0),  dir: "up",   duration: 117 },
+  { images: makePool(5),  dir: "down", duration: 133 },
+  { images: makePool(10), dir: "up",   duration: 105 },
+  { images: makePool(15), dir: "down", duration: 125 },
+  { images: makePool(20), dir: "up",   duration: 112 },
+  { images: makePool(25), dir: "down", duration: 137 },
+  { images: makePool(28), dir: "up",   duration: 108 },
 ];
 
 // CSS injected once
@@ -92,7 +132,7 @@ function ParallaxColumn({
   skewDeg: number;
 }) {
   const CELL_H = 220; // px per cell
-  const GAP    = 6;
+  const GAP    = 18;
 
   return (
     <div
@@ -124,6 +164,10 @@ function ParallaxColumn({
               overflow: "hidden",
               flexShrink: 0,
               position: "relative",
+              background: "#0d0e10",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             <img
@@ -133,11 +177,11 @@ function ParallaxColumn({
               style={{
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
-                objectPosition: "center top",
+                objectFit: "contain",
+                objectPosition: "center bottom",
                 // counter-skew the image so it appears straight inside the slanted column
-                transform: `skewX(${-skewDeg}deg) scale(1.25)`,
-                filter: "brightness(1.25) contrast(1.05)",
+                transform: `skewX(${-skewDeg}deg) scale(1.1)`,
+                filter: "brightness(1.1) contrast(1.05)",
                 display: "block",
               }}
             />
