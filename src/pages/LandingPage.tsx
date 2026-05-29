@@ -4,6 +4,7 @@
  * 100vw × 100vh, overflow hidden, no scroll.
  */
 import { useState } from "react";
+import mLogo from "../images/M_logo.webp";
 
 // Apex Legends
 import apex1 from "../images/paralelograms/apex_legends/4532e619692eb472a007178cf803f885_nobg.webp";
@@ -286,19 +287,7 @@ export function LandingPage({ onLaunch }: { onLaunch: () => void }) {
         }}
       >
         {/* Logo mark */}
-        <div
-          style={{
-            fontFamily: DISPLAY,
-            fontSize: 20,
-            fontWeight: 900,
-            color: RED,
-            letterSpacing: "0.2em",
-            textShadow: `0 0 14px ${RED}88`,
-            userSelect: "none",
-          }}
-        >
-          MACU
-        </div>
+        <img src={mLogo} alt="MACU" style={{ height: 36, width: "auto", userSelect: "none" }} />
 
         {/* Nav links */}
         <div style={{ display: "flex", gap: 36, alignItems: "center" }}>

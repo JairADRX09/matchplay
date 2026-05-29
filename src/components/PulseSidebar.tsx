@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import mLogo from "../images/M_logo.webp";
 import { usePulseStore } from "../stores/pulse-store";
 import { GAMES, getGame } from "../data/games";
 import type { Card, GameMode, GameTag } from "../types";
@@ -106,9 +107,7 @@ function SidebarHeader({
       }}
     >
       {/* Logo */}
-      <span style={{ fontWeight: 800, fontSize: 15, letterSpacing: 3, color: C.accent }}>
-        MACU
-      </span>
+      <img src={mLogo} alt="MACU" style={{ height: 28, width: "auto" }} />
 
       {/* Spacer */}
       <div style={{ flex: 1 }} />

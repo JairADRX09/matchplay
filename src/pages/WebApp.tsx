@@ -11,6 +11,8 @@ import { GAMES, getGame } from "../data/games";
 import { CARD_TTL_SECS, elapsedSecs } from "../lib/utils";
 import type { Card, GameMode, GameTag, GameID } from "../types";
 
+import mLogo from "../images/M_logo.webp";
+
 // Game background images
 import valorantBg from "../images/valoranthd.jpg";
 import fortniteBg from "../images/fortnitehd.jpg";
@@ -548,7 +550,7 @@ function FeedScreen() {
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: connected ? "#00ff88" : "#ff4d6a", boxShadow: connected ? "0 0 8px #00ff88" : "none" }} />
-          <span style={{ fontFamily: DISPLAY, fontSize: 20, letterSpacing: "0.14em", color: "#f9f5f8" }}>Macu</span>
+          <img src={mLogo} alt="Macu" style={{ height: 32, width: "auto" }} />
         </div>
 
         {/* Carousel dots */}
@@ -1181,7 +1183,7 @@ function SettingsScreen({ isSetup = false }: { isSetup?: boolean }) {
       {/* Header */}
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 32px", borderBottom: "1px solid rgba(255,255,255,0.06)", position: "relative", zIndex: 10 }}>
         <div>
-          <div style={{ fontFamily: DISPLAY, fontSize: 22, letterSpacing: "0.12em", color: accent, textShadow: `0 0 16px ${accent}55` }}>Macu</div>
+          <img src={mLogo} alt="Macu" style={{ height: 40, width: "auto", marginBottom: 4 }} />
           <div style={{ fontSize: 9, letterSpacing: "0.22em", color: "rgba(255,255,255,0.3)", marginTop: 2 }}>
             {isSetup ? "CONFIGURA TUS GAME TAGS PARA COMENZAR" : "CONFIGURA TUS GAME TAGS"}
           </div>
@@ -1334,7 +1336,8 @@ function SettingsScreen({ isSetup = false }: { isSetup?: boolean }) {
       </main>
 
       <footer style={{ textAlign: "center", padding: "12px 0", fontSize: 9, letterSpacing: "0.14em", color: "rgba(255,255,255,0.18)", position: "relative", zIndex: 10 }}>
-        Macu · TUS TAGS SE SINCRONIZAN AUTOMÁTICAMENTE
+        <img src={mLogo} alt="Macu" style={{ height: 14, width: "auto", verticalAlign: "middle", marginRight: 6 }} />
+        TUS TAGS SE SINCRONIZAN AUTOMÁTICAMENTE
       </footer>
     </div>
   );
