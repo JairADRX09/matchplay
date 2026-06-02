@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: pulse-lfg-api
+    name: macu-api
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free

@@ -48,7 +48,7 @@ import val4 from "../images/paralelograms/valorant/bc453278cb228a97749f0f1c32809
 import val5 from "../images/paralelograms/valorant/f55b17e7db2dfabc74880588796407b9_nobg.webp";
 
 const DOWNLOAD_URL =
-  "https://github.com/pulse-lfg/pulse-lfg/releases/latest/download/Pulse-LFG_x64-setup.exe";
+  "https://github.com/macu/macu/releases/latest/download/Macu_x64-setup.exe";
 
 const RED    = "#FF4655";
 const DARK   = "#121414";
